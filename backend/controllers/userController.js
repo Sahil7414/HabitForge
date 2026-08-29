@@ -319,28 +319,36 @@ export const cancelPremium = async (req, res) => {
     if (isMongoConnected()) {
       const user = await User.findById(userId);
       if (user) {
-        user.isPremium = false;
+        user.isCancelled = true;
+        user.cancelledAt = new Date();
         await user.save();
         targetUser = user;
       }
+    } else {
+      req.user.isCancelled = true;
+      req.user.cancelledAt = new Date();
     }
-    req.user.isPremium = false;
 
     // Send cancellation confirmation email to registered user
     sendCancellationConfirmationEmail({ user: targetUser }).catch((emailErr) => {
       console.error('[Cancellation Email Non-Blocking Error]', emailErr.message);
     });
 
+    const isStillActive = !!(targetUser.isPremium && targetUser.premiumExpiresAt && new Date(targetUser.premiumExpiresAt) > new Date());
+
     res.json({
-      message: 'HabitForge Premium membership cancelled.',
-      isPremium: false,
+      message: 'HabitForge Premium membership auto-renewal cancelled. You retain Premium access until your expiry date.',
+      isPremium: isStillActive,
+      isCancelled: true,
       user: {
         id: userId,
         name: targetUser.name,
         email: targetUser.email,
         xp: targetUser.xp || 0,
         level: targetUser.level || 1,
-        isPremium: false,
+        isPremium: isStillActive,
+        isCancelled: true,
+        premiumExpiresAt: targetUser.premiumExpiresAt,
       },
     });
   } catch (error) {

@@ -259,8 +259,15 @@ async function autoSeedIfEmpty() {
   }
 }
 
-connectDB().then(async () => {
-  await autoSeedIfEmpty();
+connectDB().then(async (connected) => {
+  if (!connected && process.env.NODE_ENV === 'production') {
+    console.error('[FATAL DATABASE ERROR] Failed to connect to MongoDB Atlas in production. Process exiting.');
+    process.exit(1);
+  }
+
+  if (process.env.AUTO_SEED_DEMO === 'true') {
+    await autoSeedIfEmpty();
+  }
   await runGlobalSubscriptionCheck();
   // Check subscription expirations every hour
   setInterval(() => {

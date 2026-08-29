@@ -65,6 +65,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isCancelled: {
+      type: Boolean,
+      default: false,
+    },
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
     premiumExpirationEmailSentAt: {
       type: Date,
       default: null,

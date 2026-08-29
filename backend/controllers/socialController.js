@@ -210,6 +210,9 @@ export const respondToFriendRequest = async (req, res) => {
       if (!friendReq) {
         return res.status(404).json({ message: 'Friend request not found' });
       }
+      if (friendReq.receiverId.toString() !== (req.user._id || req.user.id).toString()) {
+        return res.status(403).json({ message: 'Not authorized to respond to this friend request' });
+      }
       friendReq.status = action;
       await friendReq.save();
 
