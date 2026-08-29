@@ -114,8 +114,8 @@ export default function Profile() {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
-        <h1 className="text-4xl md:text-5xl font-bold font-geist text-white tracking-tight">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-geist text-white tracking-tight">
           Profile
         </h1>
 

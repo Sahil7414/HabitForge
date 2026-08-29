@@ -125,13 +125,13 @@ export default function Habits() {
         onClose={() => setStatsHabit(null)}
       />
 
-      <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold font-geist text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-geist text-white tracking-tight">
               Manage Habits
             </h1>
-            <p className="text-base text-[#cbc3d7] font-inter mt-1.5">
+            <p className="text-sm sm:text-base text-[#cbc3d7] font-inter mt-1.5">
               Organize, track, and optimize your daily and weekly routines.
             </p>
           </div>
@@ -372,7 +372,7 @@ export default function Habits() {
               initial={{ scale: 0.95, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 15 }}
-              className="w-full max-w-lg rounded-3xl p-6 md:p-8 bg-[#1f1f22] border border-white/10 shadow-2xl space-y-6"
+              className="w-[calc(100%-32px)] max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-5 sm:p-8 bg-[#1f1f22] border border-white/10 shadow-2xl space-y-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-white/5 pb-4">

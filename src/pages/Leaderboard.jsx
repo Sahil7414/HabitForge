@@ -57,13 +57,13 @@ export default function Leaderboard() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold font-geist text-white tracking-tight flex items-center gap-3">
-              Weekly Leaderboard <Trophy className="w-8 h-8 text-[#ffb95f]" />
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-geist text-white tracking-tight flex items-center gap-3">
+              Weekly Leaderboard <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-[#ffb95f]" />
             </h1>
-            <p className="text-base text-[#cbc3d7] font-inter mt-1.5">
+            <p className="text-xs sm:text-base text-[#cbc3d7] font-inter mt-1.5">
               Rankings reset every Monday at 00:00 UTC. Compete with your friends!
             </p>
           </div>
@@ -87,7 +87,7 @@ export default function Leaderboard() {
 
         {/* Podium Top 3 */}
         {leaderboard.length >= 3 ? (
-          <div className="grid grid-cols-3 gap-4 pt-4 items-end max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 items-end max-w-3xl mx-auto">
             {/* Rank 2 - Silver */}
             <div className="bg-[#1f1f22] border border-white/10 rounded-3xl p-6 text-center space-y-3 shadow-lg">
               <span className="text-3xl">🥈</span>

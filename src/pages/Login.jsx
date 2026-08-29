@@ -74,7 +74,7 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="bg-[#1b1b1e] border border-[#a078ff]/20 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs text-[#d0bcff]">
+        <div className="bg-[#1b1b1e] border border-[#a078ff]/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#d0bcff]">
           <div className="flex items-start gap-2.5">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>
@@ -84,7 +84,7 @@ export default function Login() {
           <button
             type="button"
             onClick={handleDemoLogin}
-            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#a078ff]/20 text-[#d0bcff] hover:bg-[#a078ff]/30 border border-[#a078ff]/40 font-bold transition-all text-xs cursor-pointer"
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#a078ff]/20 text-[#d0bcff] hover:bg-[#a078ff]/30 border border-[#a078ff]/40 font-bold transition-all text-xs cursor-pointer self-start sm:self-auto"
           >
             Log In as Demo
           </button>

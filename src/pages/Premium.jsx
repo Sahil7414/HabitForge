@@ -95,34 +95,34 @@ export default function Premium() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#a078ff]/15 border border-[#d0bcff]/30 text-[#d0bcff] text-xs font-extrabold font-geist tracking-wider uppercase">
             <Sparkles className="w-4 h-4" /> HABITFORGE PREMIUM TIER
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold font-geist text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-geist text-white tracking-tight">
             Unlock Full Potential
           </h1>
-          <p className="text-base text-[#cbc3d7] font-inter">
+          <p className="text-xs sm:text-base text-[#cbc3d7] font-inter">
             Supercharge your personal consistency with unlimited habits, 365-day heatmaps, and CSV data exports.
           </p>
         </div>
 
         {/* ACTIVE PREMIUM STATUS BANNER */}
         {isPremiumActive && (
-          <div className="bg-gradient-to-r from-[#a078ff]/20 to-[#d0bcff]/20 border border-[#d0bcff]/40 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-white font-geist">
+          <div className="bg-gradient-to-r from-[#a078ff]/20 to-[#d0bcff]/20 border border-[#d0bcff]/40 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-white font-geist">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#ffb95f]/20 border border-[#ffb95f]/40 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-[#ffb95f]/20 border border-[#ffb95f]/40 flex items-center justify-center flex-shrink-0">
                 <Crown className="w-6 h-6 text-[#ffb95f]" />
               </div>
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-lg text-white">ACTIVE PREMIUM</h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold text-base sm:text-lg text-white">ACTIVE PREMIUM</h3>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] text-[10px] font-extrabold uppercase">
                     ACTIVE
                   </span>
                 </div>
-                <div className="text-xs text-[#cbc3d7] space-x-3 font-inter">
+                <div className="text-xs text-[#cbc3d7] flex flex-wrap gap-x-3 gap-y-1 font-inter">
                   <span>Plan: <strong className="text-white">HabitForge Premium — 30 Days</strong></span>
                   <span>•</span>
                   <span>Started: <strong className="text-white">{formattedStartDate}</strong></span>
@@ -132,16 +132,16 @@ export default function Premium() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setShowCancelModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs hover:bg-red-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs hover:bg-red-500/20 transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <X className="w-4 h-4" /> Cancel Membership
               </button>
               <button
                 onClick={() => setShowSupportModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/80 font-bold text-xs hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/80 font-bold text-xs hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <HelpCircle className="w-3.5 h-3.5 text-[#d0bcff]" /> Support & Refund
               </button>

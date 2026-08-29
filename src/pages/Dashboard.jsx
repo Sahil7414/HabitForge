@@ -175,14 +175,14 @@ export default function Dashboard() {
         featureName="Unlimited Habits"
       />
 
-      <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* Header Greeting Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold font-geist text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-geist text-white tracking-tight flex items-center gap-2">
               {getGreeting()}, {user.name || 'Hero'} 👋
             </h1>
-            <p className="text-sm font-inter text-[#cbc3d7] mt-1">
+            <p className="text-xs sm:text-sm font-inter text-[#cbc3d7] mt-1">
               Ready to keep your streak alive today?
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function Dashboard() {
         </div>
 
         {/* Level & XP Banner */}
-        <div className="relative rounded-3xl p-6 bg-gradient-to-r from-[#1f1f22] to-[#131316] border border-white/5 shadow-xl overflow-hidden">
+        <div className="relative rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-[#1f1f22] to-[#131316] border border-white/5 shadow-xl overflow-hidden">
           <div
             className="absolute inset-0 opacity-15 pointer-events-none"
             style={{
@@ -207,9 +207,9 @@ export default function Dashboard() {
           />
 
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-5 w-full md:w-auto">
+            <div className="flex items-center gap-4 sm:gap-5 w-full md:w-auto">
               <div className="relative flex-shrink-0">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#a078ff] to-[#d0bcff] flex items-center justify-center text-2xl font-extrabold font-geist text-[#340080] shadow-lg">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-[#a078ff] to-[#d0bcff] flex items-center justify-center text-xl sm:text-2xl font-extrabold font-geist text-[#340080] shadow-lg">
                   {user.level || 1}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#ffb95f] flex items-center justify-center text-[10px] text-[#131316] font-bold">
@@ -218,8 +218,8 @@ export default function Dashboard() {
               </div>
 
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold font-geist text-white">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-lg sm:text-xl font-bold font-geist text-white">
                     Level {user.level || 1}
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#a078ff]/15 text-[#d0bcff] text-[10px] font-extrabold uppercase font-geist">
@@ -249,7 +249,7 @@ export default function Dashboard() {
         </div>
 
         {/* 4 Stat Overview Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
           ) : (

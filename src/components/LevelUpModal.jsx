@@ -29,7 +29,7 @@ export default function LevelUpModal({ level, onClose }) {
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.8, y: 30 }}
           transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-          className="relative w-full max-w-md rounded-3xl p-8 bg-[#1f1f22] border border-[#d0bcff]/40 text-center space-y-6 shadow-[0_0_80px_rgba(208,188,255,0.3)] overflow-hidden"
+          className="relative w-[calc(100%-32px)] max-w-md max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:p-8 bg-[#1f1f22] border border-[#d0bcff]/40 text-center space-y-6 shadow-[0_0_80px_rgba(208,188,255,0.3)]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Glowing background radial */}

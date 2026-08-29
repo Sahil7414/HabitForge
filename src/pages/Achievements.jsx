@@ -91,14 +91,14 @@ export default function Achievements() {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* Banner */}
-        <div className="bg-[#1f1f22] border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl">
+        <div className="bg-[#1f1f22] border border-white/5 rounded-3xl p-5 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold font-geist text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-geist text-white tracking-tight">
               Achievements
             </h1>
-            <p className="text-base text-[#cbc3d7] font-inter mt-1.5">
+            <p className="text-sm sm:text-base text-[#cbc3d7] font-inter mt-1.5">
               Every streak tells a story. Celebrate your progress and milestones.
             </p>
           </div>
@@ -147,7 +147,7 @@ export default function Achievements() {
         </div>
 
         {/* Badge Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {allBadges
             .filter((b) => activeCategory === 'All Achievements' || b.category === activeCategory)
             .map((badge, i) => (

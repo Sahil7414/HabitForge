@@ -192,6 +192,7 @@ html, body {
   color: #e4e1e6;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overscroll-behavior: none;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -208,6 +209,22 @@ html, body {
 }
 * {
   scrollbar-width: none;
+}
+
+/* Horizontal scroll container utility for heatmap & tables */
+.horizontal-scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar {
+  display: block;
+  height: 4px;
+}
+.horizontal-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(208, 188, 255, 0.3);
+  border-radius: 4px;
 }
 
 /* XP Bar Glow */

@@ -8,6 +8,7 @@ import {
   Bell,
   X,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,6 +32,7 @@ export default function AppLayout({ children }) {
   const { habits, allBadges, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -97,33 +99,39 @@ export default function AppLayout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-[#131316] text-[#e4e1e6]">
-      <Sidebar />
-      <div className="flex-1 pl-64 flex flex-col min-h-screen">
+      <Sidebar mobileOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      <div className="flex-1 lg:pl-64 flex flex-col min-h-screen w-full min-w-0">
         {/* Top header bar */}
         <header
-          className="fixed top-0 z-40 h-16 flex items-center justify-between px-8 border-b"
+          className="fixed top-0 left-0 lg:left-64 right-0 z-40 h-16 flex items-center justify-between px-4 sm:px-8 border-b"
           style={{
-            left: 256,
-            right: 0,
             background: 'rgba(19, 19, 22, 0.85)',
             backdropFilter: 'blur(16px)',
             borderColor: 'rgba(73, 68, 84, 0.2)',
           }}
         >
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-3 text-sm">
+            {/* Hamburger button on mobile/tablet */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-1.5 rounded-xl bg-[#1f1f22] border border-white/10 text-[#cbc3d7] hover:text-white lg:hidden cursor-pointer"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             <span className="font-geist font-bold text-[#d0bcff]">HabitForge</span>
             <span className="text-[#a078ff] font-bold">/</span>
             <span className="font-geist font-extrabold text-white tracking-wide">{getPageTitle(location.pathname)}</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Search Trigger */}
             <button
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1f1f22] border border-white/10 text-[#cbc3d7] hover:text-white hover:border-white/20 transition-all text-xs font-geist cursor-pointer"
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#1f1f22] border border-white/10 text-[#cbc3d7] hover:text-white hover:border-white/20 transition-all text-xs font-geist cursor-pointer"
             >
               <Search className="w-4 h-4 text-[#cbc3d7]" />
-              <span>Search...</span>
+              <span className="hidden sm:inline">Search...</span>
               <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-[#353438] text-[10px] text-white/60 font-mono">
                 Ctrl K
               </kbd>
@@ -153,7 +161,7 @@ export default function AppLayout({ children }) {
                       initial={{ opacity: 0, scale: 0.95, y: -5 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                      className="absolute right-0 top-full mt-2 w-80 rounded-2xl bg-[#1f1f22] border border-white/10 shadow-2xl p-4 z-50 space-y-3"
+                      className="absolute -right-2 sm:right-0 top-full mt-2 w-[calc(100vw-32px)] sm:w-80 rounded-2xl bg-[#1f1f22] border border-white/10 shadow-2xl p-4 z-50 space-y-3"
                     >
                       <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
                         <div className="flex items-center gap-2">

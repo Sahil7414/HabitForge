@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   Flame,
+  X,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -34,12 +35,13 @@ function levelTitle(level) {
   return 'Master';
 }
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AR';
 
   function handleLogout() {
+    onClose();
     logout();
     navigate('/');
   }
@@ -52,9 +54,9 @@ export default function Sidebar() {
     user?.isPremium &&
     (!user.premiumExpiresAt || new Date(user.premiumExpiresAt) > new Date());
 
-  return (
+  const sidebarContent = (
     <aside
-      className="fixed left-0 top-0 h-full w-64 z-50 flex flex-col border-r shadow-2xl"
+      className="h-full w-64 flex flex-col border-r shadow-2xl"
       style={{
         background: '#0e0e11',
         borderColor: 'rgba(73,68,84,0.2)',
@@ -77,13 +79,21 @@ export default function Sidebar() {
             HabitForge
           </span>
         </div>
-        {isPremiumActive && (
-          <span className="px-2 py-0.5 rounded-full bg-[#ffb95f]/20 border border-[#ffb95f]/40 text-[#ffb95f] text-[10px] font-extrabold font-geist">
-            PRO
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {isPremiumActive && (
+            <span className="px-2 py-0.5 rounded-full bg-[#ffb95f]/20 border border-[#ffb95f]/40 text-[#ffb95f] text-[10px] font-extrabold font-geist">
+              PRO
+            </span>
+          )}
+          {/* Close button for mobile drawer */}
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-[#cbc3d7] hover:text-white lg:hidden cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
-
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -91,6 +101,7 @@ export default function Sidebar() {
           <NavLink
             key={path}
             to={path}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3.5 px-4 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium ${
                 isActive
@@ -154,5 +165,29 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop Fixed Sidebar */}
+      <div className="hidden lg:block fixed left-0 top-0 h-full w-64 z-50">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile / Tablet Drawer Overlay */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+            onClick={onClose}
+          />
+          {/* Drawer Content */}
+          <div className="relative z-50 h-full w-64">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -19,7 +19,7 @@ export default function UpgradeModal({ isOpen, onClose, featureName = 'Unlimited
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="relative w-full max-w-md rounded-3xl p-8 bg-[#1f1f22] border border-[#d0bcff]/40 text-center space-y-6 shadow-[0_0_60px_rgba(208,188,255,0.25)] overflow-hidden"
+          className="relative w-[calc(100%-32px)] max-w-md max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:p-8 bg-[#1f1f22] border border-[#d0bcff]/40 text-center space-y-6 shadow-[0_0_60px_rgba(208,188,255,0.25)]"
           onClick={(e) => e.stopPropagation()}
         >
           <button

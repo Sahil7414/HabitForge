@@ -37,7 +37,7 @@ export default function HabitStatsModal({ habit, isOpen, onClose }) {
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="relative w-full max-w-lg rounded-3xl p-6 md:p-8 bg-[#1f1f22] border border-white/10 space-y-6 shadow-2xl overflow-hidden"
+          className="relative w-[calc(100%-32px)] max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-5 sm:p-8 bg-[#1f1f22] border border-white/10 space-y-6 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <button

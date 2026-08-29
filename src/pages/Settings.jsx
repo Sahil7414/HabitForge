@@ -147,10 +147,10 @@ export default function Settings() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         <div>
-          <h1 className="text-4xl md:text-5xl font-bold font-geist text-white tracking-tight flex items-center gap-3">
-            Settings <SettingsIcon className="w-8 h-8 text-[#d0bcff]" />
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-geist text-white tracking-tight flex items-center gap-3">
+            Settings <SettingsIcon className="w-7 h-7 sm:w-8 sm:h-8 text-[#d0bcff]" />
           </h1>
           <p className="text-base text-[#cbc3d7] font-inter mt-1.5">
             Manage your account preferences, timezone, theme, and billing receipts.
