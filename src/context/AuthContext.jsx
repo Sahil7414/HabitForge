@@ -266,6 +266,13 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       console.warn('[AuthContext] Error loading user data:', err.message);
+      if (err.response?.status === 401) {
+        setToken(null);
+        setIsLoggedIn(false);
+        setUser(EMPTY_USER);
+        localStorage.removeItem('token');
+        localStorage.removeItem('habitforge_user');
+      }
     } finally {
       setLoading(false);
     }
