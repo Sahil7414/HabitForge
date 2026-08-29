@@ -1,0 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+
+:root {
+  --color-bg: #131316;
+  --color-surface: #131316;
+  --color-surface-card: #1f1f22;
+  --color-surface-low: #1b1b1e;
+  --color-surface-high: #2a2a2d;
+  --color-surface-highest: #353438;
+  
+  --color-text-main: #e4e1e6;
+  --color-text-muted: #cbc3d7;
+  --color-outline: #494454;
+
+  --color-primary: #d0bcff;
+  --color-primary-container: #a078ff;
+  --color-on-primary: #3c0091;
+
+  --color-secondary: #adc6ff;
+  --color-tertiary: #ffb95f;
+  --color-error: #ffb4ab;
+  --color-success: #10b981;
+
+  /* Heatmap Theme Variables (Dark Theme) */
+  --heatmap-card-bg: #1f1f22;
+  --heatmap-level-0: #2a2a2d;
+  --heatmap-level-1: rgba(208, 188, 255, 0.35);
+  --heatmap-level-2: rgba(208, 188, 255, 0.65);
+  --heatmap-level-3: rgba(208, 188, 255, 0.85);
+  --heatmap-level-4: #d0bcff;
+  --heatmap-future: rgba(255, 255, 255, 0.04);
+  --heatmap-placeholder: transparent;
+  --heatmap-text: #cbc3d7;
+  --heatmap-cell-shadow: 0 0 10px rgba(208, 188, 255, 0.6);
+}
+
+/* Comprehensive Light Theme Engine Overrides */
+html.light-theme,
+body.light-theme {
+  background-color: #f4f4f7 !important;
+  color: #0f172a !important;
+
+  /* Heatmap Theme Variables (Light Theme) */
+  --heatmap-card-bg: #ffffff;
+  --heatmap-level-0: #e2e8f0;
+  --heatmap-level-1: #c4b5fd;
+  --heatmap-level-2: #a78bfa;
+  --heatmap-level-3: #8b5cf6;
+  --heatmap-level-4: #6d28d9;
+  --heatmap-future: #f1f5f9;
+  --heatmap-placeholder: transparent;
+  --heatmap-text: #475569;
+  --heatmap-cell-shadow: 0 0 10px rgba(109, 40, 217, 0.3);
+}
+
+/* Base Surfaces & Containers */
+html.light-theme main,
+html.light-theme header {
+  background-color: #f4f4f7 !important;
+  color: #0f172a !important;
+}
+
+html.light-theme header {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+html.light-theme .bg-\[\#131316\],
+html.light-theme .bg-\[\#131316\]\/50,
+html.light-theme .bg-\[\#19191c\],
+html.light-theme .bg-\[\#1f1f22\],
+html.light-theme .bg-\[\#2a2a2d\],
+html.light-theme .bg-\[\#353438\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Gradient Cards Overrides (Level & XP Banners) */
+html.light-theme .from-\[\#1f1f22\].to-\[\#131316\] {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Sidebar Light Theme Styling */
+html.light-theme aside {
+  background: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+}
+
+html.light-theme aside .border-b,
+html.light-theme aside .border-t,
+html.light-theme aside .border {
+  border-color: #e2e8f0 !important;
+}
+
+html.light-theme aside .bg-\[\#131316\],
+html.light-theme aside .bg-\[\#1f1f22\] {
+  background-color: #f8fafc !important;
+}
+
+/* Active Nav Item in Light Mode: Vibrant Deep Purple with Pure White Text */
+html.light-theme aside a.bg-\[\#a078ff\]\/20 {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+  border-color: #6d28d9 !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35) !important;
+}
+
+html.light-theme aside a.bg-\[\#a078ff\]\/20 svg,
+html.light-theme aside a.bg-\[\#a078ff\]\/20 span {
+  color: #ffffff !important;
+}
+
+/* Inactive Nav Items in Light Mode */
+html.light-theme aside a.text-\[\#cbc3d7\] {
+  color: #334155 !important;
+}
+
+html.light-theme aside a.text-\[\#cbc3d7\]:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+html.light-theme aside a.text-\[\#cbc3d7\] svg {
+  color: #475569 !important;
+}
+
+/* High Contrast Typography Overrides */
+html.light-theme .text-white {
+  color: #0f172a !important;
+}
+
+html.light-theme .text-\[\#cbc3d7\] {
+  color: #475569 !important;
+}
+
+html.light-theme .text-white\/60,
+html.light-theme .text-white\/50,
+html.light-theme .text-white\/30 {
+  color: #64748b !important;
+}
+
+html.light-theme .border-white\/5,
+html.light-theme .border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Inputs, Selects & Textareas */
+html.light-theme input,
+html.light-theme select,
+html.light-theme textarea {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light-theme input::placeholder,
+html.light-theme textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Modal Backdrops */
+html.light-theme .bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+/* Recharts & Analytics Charts in Light Mode */
+html.light-theme .recharts-cartesian-axis-tick text {
+  fill: #334155 !important;
+  font-weight: 600 !important;
+}
+
+html.light-theme .recharts-cartesian-grid line {
+  stroke: #e2e8f0 !important;
+}
+
+/* Heatmap Empty Cells remain dark in Light Mode per user preference */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #131316;
+  color: #e4e1e6;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-geist {
+  font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-inter {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+}
+
+/* XP Bar Glow */
+.xp-bar-fill {
+  background: linear-gradient(90deg, #a078ff, #d0bcff);
+  box-shadow: 0 0 10px rgba(208, 188, 255, 0.6);
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 16px rgba(208, 188, 255, 0.25);
+}
+
+.glow-tertiary {
+  box-shadow: 0 0 16px rgba(255, 185, 95, 0.3);
+}
+
+.glow-success {
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+}
