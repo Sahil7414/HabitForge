@@ -403,8 +403,25 @@ export const getWeeklyLeaderboard = async (req, res) => {
     const currentUserIdStr = (req.user._id || req.user.id).toString();
 
     let allUsers = [];
+    const weeklyXpMap = {};
+
     if (isMongoConnected()) {
       allUsers = await User.find({}).select('name avatar level xp isPremium');
+      
+      const startOfWeekDate = new Date();
+      startOfWeekDate.setHours(0, 0, 0, 0);
+      const day = startOfWeekDate.getDay();
+      const diff = startOfWeekDate.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeekDate.setDate(diff);
+
+      const weeklyXpAgg = await XPTransaction.aggregate([
+        { $match: { createdAt: { $gte: startOfWeekDate } } },
+        { $group: { _id: '$userId', weeklyXP: { $sum: '$amount' } } },
+      ]);
+
+      weeklyXpAgg.forEach((item) => {
+        weeklyXpMap[item._id.toString()] = item.weeklyXP;
+      });
     } else {
       allUsers = inMemoryDB.users;
     }
@@ -415,7 +432,7 @@ export const getWeeklyLeaderboard = async (req, res) => {
       
       const totalXP = isCurrent ? (req.user.xp ?? u.xp ?? 0) : (u.xp ?? 0);
       const level = isCurrent ? (req.user.level ?? u.level ?? 1) : (u.level ?? 1);
-      const weeklyXP = totalXP;
+      const weeklyXP = weeklyXpMap[uId] !== undefined ? weeklyXpMap[uId] : totalXP;
 
       return {
         userId: uId,
@@ -441,3 +458,4 @@ export const getWeeklyLeaderboard = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+

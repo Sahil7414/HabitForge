@@ -1,4 +1,4 @@
-import { getNormalizedToday, getDayDifference } from './dateUtils.js';
+import { getNormalizedToday, getDayDifference, getWeekDifference, isSameCompletionPeriod } from './dateUtils.js';
 
 export const XP_CONFIG = {
   BASE_COMPLETION: 10,
@@ -16,22 +16,47 @@ export function calculateLevel(xp) {
 }
 
 /**
+ * Calculates current active streak for display (resets to 0 if completion period missed)
+ */
+export function getActiveStreak(habit, todayStr = getNormalizedToday()) {
+  if (!habit || !habit.lastCompletedDate) return 0;
+  const lastDate = habit.lastCompletedDate;
+  const freq = habit.frequency || 'DAILY';
+
+  if (freq === 'DAILY') {
+    const diffDays = getDayDifference(todayStr, lastDate);
+    if (diffDays <= 1) {
+      return habit.currentStreak || 0;
+    }
+    return 0;
+  } else if (freq === 'WEEKLY') {
+    const weekDiff = getWeekDifference(todayStr, lastDate);
+    if (weekDiff <= 1) {
+      return habit.currentStreak || 0;
+    }
+    return 0;
+  }
+  return habit.currentStreak || 0;
+}
+
+/**
  * Gamification Streak Engine for daily and weekly habits.
  */
 export function calculateStreakUpdate(habit, todayStr = getNormalizedToday()) {
   const lastDate = habit.lastCompletedDate;
+  const freq = habit.frequency || 'DAILY';
 
-  // Duplicate Check-in Prevention
-  if (lastDate === todayStr) {
+  // Duplicate Check-in Prevention for DAILY and WEEKLY periods
+  if (lastDate && isSameCompletionPeriod(lastDate, todayStr, freq)) {
     throw new Error('DUPLICATE_CHECKIN: Habit already completed for this period');
   }
 
-  let newCurrentStreak = habit.currentStreak || 0;
+  let newCurrentStreak = getActiveStreak(habit, todayStr);
 
   if (!lastDate) {
     // First time completing this habit
     newCurrentStreak = 1;
-  } else if (habit.frequency === 'DAILY') {
+  } else if (freq === 'DAILY') {
     const diffDays = getDayDifference(todayStr, lastDate);
     if (diffDays === 1) {
       // Completed yesterday -> increment streak
@@ -40,11 +65,13 @@ export function calculateStreakUpdate(habit, todayStr = getNormalizedToday()) {
       // Missed required day -> reset streak to 1
       newCurrentStreak = 1;
     }
-  } else if (habit.frequency === 'WEEKLY') {
-    const diffDays = getDayDifference(todayStr, lastDate);
-    if (diffDays <= 7) {
+  } else if (freq === 'WEEKLY') {
+    const weekDiff = getWeekDifference(todayStr, lastDate);
+    if (weekDiff === 1) {
+      // Completed in consecutive week -> increment streak
       newCurrentStreak += 1;
     } else {
+      // Missed a week or first week check-in -> reset streak to 1
       newCurrentStreak = 1;
     }
   }

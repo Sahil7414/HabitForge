@@ -1,4 +1,4 @@
-import { format, subDays, parseISO, isSameDay, differenceInCalendarDays, startOfWeek } from 'date-fns';
+import { format, subDays, parseISO, isSameDay, differenceInCalendarDays, differenceInCalendarWeeks, startOfWeek } from 'date-fns';
 
 /**
  * Returns today's date formatted as YYYY-MM-DD in normalized local time
@@ -25,6 +25,18 @@ export function getDayDifference(dateStrA, dateStrB) {
 }
 
 /**
+ * Calculates calendar week difference between two YYYY-MM-DD date strings (Monday-based weeks)
+ */
+export function getWeekDifference(dateStrA, dateStrB) {
+  if (!dateStrA || !dateStrB) return Infinity;
+  const dA = parseISO(dateStrA);
+  const dB = parseISO(dateStrB);
+  const weekA = startOfWeek(dA, { weekStartsOn: 1 });
+  const weekB = startOfWeek(dB, { weekStartsOn: 1 });
+  return Math.abs(differenceInCalendarWeeks(weekA, weekB));
+}
+
+/**
  * Returns start of current week (Monday 00:00:00) formatted as Date or YYYY-MM-DD
  */
 export function getStartOfUserWeek(date = new Date()) {
@@ -45,3 +57,4 @@ export function isSameCompletionPeriod(dateStrA, dateStrB, frequency = 'DAILY') 
   const weekB = format(startOfWeek(dB, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   return weekA === weekB;
 }
+

@@ -78,4 +78,28 @@ describe('HabitForge End-to-End Logic & Gamification Unit Tests', () => {
     assert.equal(isSameCompletionPeriod('2026-08-24', '2026-08-25', 'DAILY'), false);
     assert.equal(isSameCompletionPeriod('2026-08-24', '2026-08-25', 'WEEKLY'), true);
   });
+
+  test('calculateStreakUpdate - weekly habit consecutive week completion', () => {
+    // 2026-08-17 (Monday Week 34) and 2026-08-25 (Tuesday Week 35)
+    const habit = {
+      frequency: 'WEEKLY',
+      currentStreak: 2,
+      longestStreak: 5,
+      lastCompletedDate: '2026-08-17',
+    };
+    const res = calculateStreakUpdate(habit, '2026-08-25');
+    assert.equal(res.currentStreak, 3);
+  });
+
+  test('calculateStreakUpdate - weekly habit duplicate check-in in same week throws error', () => {
+    // 2026-08-24 (Monday) and 2026-08-25 (Tuesday) are in the same calendar week
+    const habit = {
+      frequency: 'WEEKLY',
+      currentStreak: 3,
+      longestStreak: 5,
+      lastCompletedDate: '2026-08-24',
+    };
+    assert.throws(() => calculateStreakUpdate(habit, '2026-08-25'), /DUPLICATE_CHECKIN/);
+  });
 });
+

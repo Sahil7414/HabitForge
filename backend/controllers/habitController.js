@@ -9,6 +9,7 @@ import {
   calculateStreakUpdate,
   calculateLevel,
   evaluateBadges,
+  getActiveStreak,
   XP_CONFIG,
 } from '../utils/gamification.js';
 import { isMongoConnected, inMemoryDB } from '../config/inMemoryStore.js';
@@ -36,6 +37,7 @@ export const getHabits = async (req, res) => {
         const idStr = (habitObj._id || habitObj.id).toString();
         habitObj.id = idStr;
         habitObj.isActive = habitObj.isActive !== false;
+        habitObj.currentStreak = getActiveStreak(habitObj, todayStr);
         habitObj.completedToday = habitObj.lastCompletedDate === todayStr || completedHabitIds.has(idStr);
         return habitObj;
       });
@@ -54,6 +56,7 @@ export const getHabits = async (req, res) => {
           return {
             ...h,
             id: idStr,
+            currentStreak: getActiveStreak(h, todayStr),
             completedToday: h.lastCompletedDate === todayStr || completedHabitIds.has(idStr),
           };
         });

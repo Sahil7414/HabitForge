@@ -6,6 +6,7 @@ import { getNormalizedToday } from '../utils/dateUtils.js';
 import { isMongoConnected, inMemoryDB } from '../config/inMemoryStore.js';
 import { checkAndUpdateUserPremiumStatus, calculateNewExpiryDate } from '../utils/subscriptionUtils.js';
 import { sendCancellationConfirmationEmail } from '../services/emailService.js';
+import { getActiveStreak } from '../utils/gamification.js';
 
 // @desc    Get consolidated Dashboard summary payload (User, Habits, Stats, Notifications)
 // @route   GET /api/users/dashboard-summary
@@ -33,12 +34,13 @@ export const getDashboardSummary = async (req, res) => {
         const idStr = (obj._id || obj.id).toString();
         obj.id = idStr;
         obj.isActive = obj.isActive !== false;
+        obj.currentStreak = getActiveStreak(obj, todayStr);
         obj.completedToday = obj.lastCompletedDate === todayStr || completedHabitIds.has(idStr);
         return obj;
       });
 
       const completedTodayCount = habitsWithStatus.filter((h) => h.completedToday && !h.isArchived).length;
-      const currentStreak = Math.max(0, ...habits.map((h) => h.currentStreak || 0));
+      const currentStreak = Math.max(0, ...habitsWithStatus.map((h) => h.currentStreak || 0));
       const longestStreak = Math.max(0, ...habits.map((h) => h.longestStreak || 0));
 
       return res.json({
@@ -78,6 +80,7 @@ export const getDashboardSummary = async (req, res) => {
         return {
           ...h,
           id: idStr,
+          currentStreak: getActiveStreak(h, todayStr),
           completedToday: h.lastCompletedDate === todayStr || completedHabitIds.has(idStr),
         };
       });
@@ -102,7 +105,7 @@ export const getDashboardSummary = async (req, res) => {
         habits: habitsWithStatus,
         stats: {
           totalCompletions: 0,
-          currentStreak: Math.max(0, ...userHabits.map((h) => h.currentStreak || 0)),
+          currentStreak: Math.max(0, ...habitsWithStatus.map((h) => h.currentStreak || 0)),
           longestStreak: Math.max(0, ...userHabits.map((h) => h.longestStreak || 0)),
           activeHabitsCount: userHabits.filter((h) => h.isActive !== false).length,
           completedTodayCount: habitsWithStatus.filter((h) => h.completedToday).length,
@@ -120,6 +123,7 @@ export const getDashboardSummary = async (req, res) => {
 // @route   GET /api/users/profile
 export const getUserProfile = async (req, res) => {
   try {
+    const todayStr = getNormalizedToday();
     const userId = req.user._id || req.user.id;
     if (isMongoConnected()) {
       const user = await User.findById(userId);
@@ -128,7 +132,7 @@ export const getUserProfile = async (req, res) => {
       const habits = await Habit.find({ userId });
       const totalCompletions = await HabitLog.countDocuments({ userId });
 
-      const currentStreak = Math.max(0, ...habits.map((h) => h.currentStreak || 0));
+      const currentStreak = Math.max(0, ...habits.map((h) => getActiveStreak(h, todayStr)));
       const longestStreak = Math.max(0, ...habits.map((h) => h.longestStreak || 0));
 
       return res.json({
