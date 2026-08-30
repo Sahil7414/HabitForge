@@ -38,12 +38,29 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const allowedOrigins = Array.from(
+  new Set(
+    [
+      'http://localhost:5173',
+      'https://habit-forge-plum.vercel.app',
+      process.env.CLIENT_URL,
+      process.env.FRONTEND_URL,
+    ].filter(Boolean)
+  )
+);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
+
 
 function validateBrevoEmailConfig() {
   const provider = process.env.EMAIL_PROVIDER || 'brevo';
