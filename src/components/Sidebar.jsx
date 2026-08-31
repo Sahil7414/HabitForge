@@ -13,6 +13,7 @@ import {
   LogOut,
   Flame,
   X,
+  Shield,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -96,7 +97,39 @@ export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {user?.role === 'admin' && (
+          <NavLink
+            to="/admin"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-200 text-sm font-semibold mb-2 ${
+                isActive
+                  ? 'admin-nav-active bg-gradient-to-r from-[#6d3bd7]/40 to-[#a078ff]/30 text-white border border-[#d0bcff]/50 shadow-[0_0_20px_rgba(160,120,255,0.3)]'
+                  : 'admin-nav-inactive bg-[#ffb95f]/10 text-[#ffb95f] hover:bg-[#ffb95f]/20 border border-[#ffb95f]/30'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <div className="flex items-center gap-3.5">
+                  <Shield className="w-4 h-4 text-[#ffb95f]" />
+                  <span>Admin Panel</span>
+                </div>
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold font-geist uppercase tracking-wider ${
+                    isActive
+                      ? 'bg-white/20 text-white border border-white/30'
+                      : 'bg-[#ffb95f]/20 text-[#ffb95f] border border-[#ffb95f]/30'
+                  }`}
+                >
+                  ADMIN
+                </span>
+              </>
+            )}
+          </NavLink>
+        )}
+
         {NAV_ITEMS.map(({ path, Icon, label }) => (
           <NavLink
             key={path}

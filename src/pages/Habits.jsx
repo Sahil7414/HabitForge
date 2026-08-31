@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import AppLayout from '../components/AppLayout';
 import HabitStatsModal from '../components/HabitStatsModal';
 import UpgradeModal from '../components/UpgradeModal';
+import EmojiSelector from '../components/EmojiSelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -445,16 +446,11 @@ export default function Habits() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold font-geist text-[#cbc3d7] uppercase mb-1">
-                      Icon Emoji
-                    </label>
-                    <input
-                      value={formIcon}
-                      onChange={(e) => setFormIcon(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#131316] border border-white/10 text-white text-center font-inter text-base outline-none"
-                    />
-                  </div>
+                  <EmojiSelector
+                    label="Habit Icon"
+                    selectedEmoji={formIcon}
+                    onSelectEmoji={setFormIcon}
+                  />
 
                   <div>
                     <label className="block text-xs font-bold font-geist text-[#cbc3d7] uppercase mb-1">
@@ -464,7 +460,7 @@ export default function Habits() {
                       type="color"
                       value={formColor}
                       onChange={(e) => setFormColor(e.target.value)}
-                      className="w-full h-10 rounded-xl bg-[#131316] border border-white/10 p-1 cursor-pointer"
+                      className="w-full h-11 rounded-xl bg-[#131316] border border-white/10 p-1 cursor-pointer"
                     />
                   </div>
                 </div>

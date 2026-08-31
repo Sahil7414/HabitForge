@@ -13,10 +13,10 @@ function BadgeCard({ badge, index }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.04 }}
-      className={`relative flex flex-col justify-between p-6 rounded-2xl border transition-all ${
+      className={`badge-card relative flex flex-col justify-between p-6 rounded-2xl border transition-all ${
         badge.unlocked
-          ? 'bg-[#1f1f22] border-[#d0bcff]/30 shadow-lg hover:-translate-y-1 hover:border-[#d0bcff]/60'
-          : 'bg-[#1b1b1e] border-white/5 opacity-60 grayscale-[0.5]'
+          ? 'badge-card-unlocked bg-[#1f1f22] border-[#d0bcff]/30 shadow-lg hover:-translate-y-1 hover:border-[#d0bcff]/60'
+          : 'badge-card-locked bg-[#1b1b1e] border-white/5 opacity-75'
       }`}
     >
       <div>
@@ -25,7 +25,7 @@ function BadgeCard({ badge, index }) {
             className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-lg ${
               badge.unlocked
                 ? 'bg-[#a078ff]/20 border border-[#d0bcff]/40'
-                : 'bg-[#353438] border border-white/10'
+                : 'badge-lock-icon-box bg-[#353438] border border-white/10'
             }`}
           >
             {badge.unlocked ? (
@@ -39,7 +39,7 @@ function BadgeCard({ badge, index }) {
             className={`text-[10px] font-bold font-geist px-2.5 py-1 rounded-lg tracking-wider uppercase ${
               badge.unlocked
                 ? 'bg-[#a078ff]/20 text-[#d0bcff] border border-[#d0bcff]/30'
-                : 'bg-[#353438] text-[#cbc3d7]'
+                : 'badge-locked-pill bg-[#353438] text-[#cbc3d7]'
             }`}
           >
             {badge.unlocked ? 'UNLOCKED' : 'LOCKED'}
@@ -57,9 +57,9 @@ function BadgeCard({ badge, index }) {
       <div className="mt-5 pt-3 border-t border-white/5">
         {!badge.unlocked && badge.progress !== undefined ? (
           <div className="space-y-1.5">
-            <div className="h-1.5 rounded-full bg-[#353438] overflow-hidden">
+            <div className="h-1.5 rounded-full bg-[#353438] overflow-hidden badge-progress-track">
               <div
-                className="h-full bg-[#cbc3d7] rounded-full"
+                className="h-full bg-[#cbc3d7] rounded-full badge-progress-fill"
                 style={{ width: `${(badge.progress / badge.target) * 100}%` }}
               />
             </div>
@@ -135,10 +135,10 @@ export default function Achievements() {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2.5 rounded-full text-xs font-bold font-geist tracking-wider uppercase transition-all whitespace-nowrap ${
+              className={`achievement-cat-pill px-5 py-2.5 rounded-full text-xs font-bold font-geist tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer ${
                 activeCategory === cat
-                  ? 'bg-[#a078ff] text-[#340080] shadow-md shadow-[#a078ff]/20'
-                  : 'bg-[#1b1b1e] text-[#cbc3d7] border border-white/5 hover:text-white'
+                  ? 'active bg-[#a078ff] text-[#340080] shadow-md shadow-[#a078ff]/20 font-extrabold'
+                  : 'inactive bg-[#1b1b1e] text-[#cbc3d7] border border-white/5 hover:text-white'
               }`}
             >
               {cat}

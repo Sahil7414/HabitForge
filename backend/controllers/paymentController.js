@@ -197,10 +197,12 @@ export const verifyPayment = async (req, res) => {
       user = await User.findById(req.user._id);
       if (!user) return res.status(404).json({ message: 'User not found' });
 
-      newExpiresAt = calculateNewExpiryDate(user.premiumExpiresAt);
+      newExpiresAt = calculateNewExpiryDate();
 
       user.isPremium = true;
-      user.premiumSince = user.premiumSince || now;
+      user.isCancelled = false;
+      user.cancelledAt = null;
+      user.premiumSince = now;
       user.premiumExpiresAt = newExpiresAt;
       user.expiredNotified = false;
       user.lastPaymentId = razorpay_payment_id;
@@ -208,9 +210,11 @@ export const verifyPayment = async (req, res) => {
       await user.save();
     } else {
       user = req.user;
-      newExpiresAt = calculateNewExpiryDate(user.premiumExpiresAt);
+      newExpiresAt = calculateNewExpiryDate();
       user.isPremium = true;
-      user.premiumSince = user.premiumSince || now;
+      user.isCancelled = false;
+      user.cancelledAt = null;
+      user.premiumSince = now;
       user.premiumExpiresAt = newExpiresAt;
       user.expiredNotified = false;
       user.lastPaymentId = razorpay_payment_id;
@@ -355,6 +359,7 @@ export const getReceipt = async (req, res) => {
       planName: 'HabitForge Premium — 30 Days',
       amount: payment.amount || 99,
       currency: payment.currency || 'INR',
+      paymentStatus: payment.status || 'paid',
       paymentMethod: payment.paymentMethod || 'UPI / Card Checkout',
       razorpayPaymentId: payment.razorpayPaymentId || 'N/A',
       razorpayOrderId: payment.razorpayOrderId || 'N/A',
@@ -398,7 +403,7 @@ export const resendReceipt = async (req, res) => {
       return res.status(400).json({ message: 'Cannot resend receipt for unpaid transactions' });
     }
 
-    await sendPremiumConfirmationEmail({ user: req.user, payment });
+    await sendPremiumConfirmationEmail({ user: req.user, payment, force: true });
 
     return res.json({
       message: `Payment receipt emailed to ${req.user.email}!`,

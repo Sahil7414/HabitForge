@@ -4,7 +4,7 @@ import { HabitLog } from '../models/HabitLog.js';
 import { User } from '../models/User.js';
 import { XPTransaction } from '../models/XPTransaction.js';
 import { Notification } from '../models/Notification.js';
-import { getNormalizedToday } from '../utils/dateUtils.js';
+import { getNormalizedToday, formatNormalizedDate, isSameCompletionPeriod } from '../utils/dateUtils.js';
 import {
   calculateStreakUpdate,
   calculateLevel,
@@ -18,7 +18,9 @@ import { isMongoConnected, inMemoryDB } from '../config/inMemoryStore.js';
 // @route   GET /api/habits
 export const getHabits = async (req, res) => {
   try {
-    const todayStr = getNormalizedToday();
+    const userTz = req.user?.timezone || 'UTC';
+    const targetTodayStr = getNormalizedToday(userTz);
+    const utcTodayStr = getNormalizedToday('UTC');
     const userIdStr = (req.user._id || req.user.id).toString();
     const { includeArchived } = req.query;
 
@@ -29,7 +31,7 @@ export const getHabits = async (req, res) => {
       }
 
       const habits = await Habit.find(filter).sort({ createdAt: -1 });
-      const todayLogs = await HabitLog.find({ userId: req.user._id, completionDate: todayStr });
+      const todayLogs = await HabitLog.find({ userId: req.user._id, completionDate: targetTodayStr });
       const completedHabitIds = new Set(todayLogs.map((l) => l.habitId.toString()));
 
       const habitsWithStatus = habits.map((h) => {
@@ -37,8 +39,10 @@ export const getHabits = async (req, res) => {
         const idStr = (habitObj._id || habitObj.id).toString();
         habitObj.id = idStr;
         habitObj.isActive = habitObj.isActive !== false;
-        habitObj.currentStreak = getActiveStreak(habitObj, todayStr);
-        habitObj.completedToday = habitObj.lastCompletedDate === todayStr || completedHabitIds.has(idStr);
+        habitObj.currentStreak = getActiveStreak(habitObj, targetTodayStr);
+        habitObj.completedToday =
+          habitObj.lastCompletedDate === targetTodayStr ||
+          completedHabitIds.has(idStr);
         return habitObj;
       });
 
@@ -276,7 +280,7 @@ export const checkInHabit = async (req, res) => {
   try {
     const habitId = req.params.id;
     const userIdStr = (req.user._id || req.user.id).toString();
-    const todayStr = getNormalizedToday();
+    const todayStr = getNormalizedToday(req.user?.timezone || 'UTC');
 
     if (isMongoConnected()) {
       let habit = null;
@@ -289,23 +293,46 @@ export const checkInHabit = async (req, res) => {
       if (!habit) {
         return res.status(404).json({ message: 'Habit not found' });
       }
-      if (habit.userId.toString() !== userIdStr) {
-        return res.status(403).json({ message: 'Not authorized to complete this habit' });
+      const userTz = req.user?.timezone || 'UTC';
+      const targetTodayStr = getNormalizedToday(userTz);
+
+      const existingLog = await HabitLog.findOne({
+        habitId: habit._id,
+        completionDate: targetTodayStr,
+      });
+
+      if (existingLog || habit.lastCompletedDate === targetTodayStr) {
+        const habitObj = habit.toObject();
+        habitObj.completedToday = true;
+        return res.json({
+          message: 'Habit already completed for today!',
+          alreadyCompleted: true,
+          xpEarned: 0,
+          leveledUp: false,
+          newLevel: req.user.level || 1,
+          habit: habitObj,
+          user: req.user,
+        });
       }
 
       let streakUpdates;
       try {
-        streakUpdates = calculateStreakUpdate(habit, todayStr);
+        streakUpdates = calculateStreakUpdate(habit, targetTodayStr);
       } catch (err) {
         if (err.message.startsWith('DUPLICATE_CHECKIN')) {
-          return res.status(400).json({ message: 'Habit already completed for today' });
+          const habitObj = habit.toObject();
+          habitObj.completedToday = true;
+          return res.json({
+            message: 'Habit already completed for today!',
+            alreadyCompleted: true,
+            xpEarned: 0,
+            leveledUp: false,
+            newLevel: req.user.level || 1,
+            habit: habitObj,
+            user: req.user,
+          });
         }
         throw err;
-      }
-
-      const existingLog = await HabitLog.findOne({ habitId: habit._id, completionDate: todayStr });
-      if (existingLog) {
-        return res.status(400).json({ message: 'Habit already completed for today!' });
       }
 
       let habitLog;
@@ -313,12 +340,22 @@ export const checkInHabit = async (req, res) => {
         habitLog = await HabitLog.create({
           habitId: habit._id,
           userId: req.user._id,
-          completionDate: todayStr,
+          completionDate: targetTodayStr,
           completedAt: new Date(),
         });
       } catch (dbErr) {
         if (dbErr.code === 11000) {
-          return res.status(400).json({ message: 'Habit already completed for today!' });
+          const habitObj = habit.toObject();
+          habitObj.completedToday = true;
+          return res.json({
+            message: 'Habit already completed for today!',
+            alreadyCompleted: true,
+            xpEarned: 0,
+            leveledUp: false,
+            newLevel: req.user.level || 1,
+            habit: habitObj,
+            user: req.user,
+          });
         }
         throw dbErr;
       }
@@ -360,6 +397,16 @@ export const checkInHabit = async (req, res) => {
 
       await user.save();
 
+      const userEffectiveTz = user.timezone || userTz;
+      const userTodayStr = getNormalizedToday(userEffectiveTz);
+      const recentXpTxs = await XPTransaction.find({
+        userId: user._id,
+        createdAt: { $gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+      });
+      const todayXP = recentXpTxs
+        .filter((tx) => formatNormalizedDate(tx.createdAt, userEffectiveTz) === userTodayStr)
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
       const habitObj = habit.toObject();
       habitObj.completedToday = true;
 
@@ -375,6 +422,7 @@ export const checkInHabit = async (req, res) => {
           name: user.name,
           email: user.email,
           xp: user.xp,
+          todayXP,
           level: user.level,
           badges: user.badges,
           isPremium: user.isPremium,

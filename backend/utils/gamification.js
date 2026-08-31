@@ -46,9 +46,9 @@ export function calculateStreakUpdate(habit, todayStr = getNormalizedToday()) {
   const lastDate = habit.lastCompletedDate;
   const freq = habit.frequency || 'DAILY';
 
-  // Duplicate Check-in Prevention for DAILY and WEEKLY periods
-  if (lastDate && isSameCompletionPeriod(lastDate, todayStr, freq)) {
-    throw new Error('DUPLICATE_CHECKIN: Habit already completed for this period');
+  // Duplicate Check-in Prevention per calendar day
+  if (lastDate === todayStr) {
+    throw new Error('DUPLICATE_CHECKIN: Habit already completed for today');
   }
 
   let newCurrentStreak = getActiveStreak(habit, todayStr);
@@ -70,8 +70,11 @@ export function calculateStreakUpdate(habit, todayStr = getNormalizedToday()) {
     if (weekDiff === 1) {
       // Completed in consecutive week -> increment streak
       newCurrentStreak += 1;
+    } else if (weekDiff === 0) {
+      // Additional completion within current week -> preserve active streak
+      newCurrentStreak = Math.max(1, habit.currentStreak || 1);
     } else {
-      // Missed a week or first week check-in -> reset streak to 1
+      // Missed a week -> reset streak to 1
       newCurrentStreak = 1;
     }
   }

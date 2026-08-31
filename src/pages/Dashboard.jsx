@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, ALL_BADGES } from '../context/AuthContext';
 import AppLayout from '../components/AppLayout';
 import UpgradeModal from '../components/UpgradeModal';
+import EmojiSelector from '../components/EmojiSelector';
 import { StatCardSkeleton, HabitCardSkeleton } from '../components/SkeletonLoaders';
 import {
   CheckCircle2,
   Flame,
   Trophy,
   Star,
+  Zap,
   Check,
   Plus,
   Circle,
@@ -248,20 +250,32 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 4 Stat Overview Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 5 Stat Overview Cards including Today's XP */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {loading ? (
-            Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+            Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
           ) : (
             <>
               <div className="bg-[#1f1f22] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold font-geist text-[#cbc3d7] uppercase">Today's Progress</span>
+                  <span className="text-xs font-bold font-geist text-[#cbc3d7] uppercase">Today's Habits</span>
                   <div className="text-2xl font-extrabold font-geist text-white mt-1">
                     {completedTodayCount} <span className="text-sm font-normal text-[#cbc3d7]">/ {activeHabits.length}</span>
                   </div>
                 </div>
                 <CheckCircle2 className="w-6 h-6 text-[#10b981]" />
+              </div>
+
+              <div className="bg-[#1f1f22] border border-[#ffb95f]/25 rounded-2xl p-4 flex items-center justify-between bg-gradient-to-br from-[#1f1f22] to-[#262118] shadow-md">
+                <div>
+                  <span className="text-xs font-bold font-geist text-[#ffb95f] uppercase flex items-center gap-1">
+                    Today's XP
+                  </span>
+                  <div className="text-2xl font-extrabold font-geist text-[#ffb95f] mt-1">
+                    +{(user.todayXP || 0).toLocaleString()} <span className="text-xs font-bold text-[#ffb95f]/80 uppercase">XP</span>
+                  </div>
+                </div>
+                <Zap className="w-6 h-6 text-[#ffb95f] fill-[#ffb95f]" />
               </div>
 
               <div className="bg-[#1f1f22] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
@@ -284,7 +298,7 @@ export default function Dashboard() {
                 <Trophy className="w-6 h-6 text-[#ffb95f]" />
               </div>
 
-              <div className="bg-[#1f1f22] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+              <div className="bg-[#1f1f22] border border-white/5 rounded-2xl p-4 flex items-center justify-between col-span-2 sm:col-span-1">
                 <div>
                   <span className="text-xs font-bold font-geist text-[#cbc3d7] uppercase">Total XP</span>
                   <div className="text-2xl font-extrabold font-geist text-[#d0bcff] mt-1">
@@ -392,11 +406,11 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Achievements Preview */}
+            {/* Achievements Preview with Emoji & Hover/Focus Tooltips */}
             <div className="bg-[#1f1f22] border border-white/5 rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold font-geist text-[#cbc3d7] tracking-widest uppercase">
-                  UNLOCKED BADGES
+                  UNLOCKED BADGES ({user.badges?.length || 0})
                 </h3>
                 <Link to="/achievements" className="text-xs font-bold font-geist text-[#d0bcff] hover:text-white">
                   VIEW ALL
@@ -405,14 +419,38 @@ export default function Dashboard() {
 
               <div className="flex items-center gap-3 flex-wrap">
                 {user.badges && user.badges.length > 0 ? (
-                  user.badges.map((badgeId, idx) => (
-                    <div
-                      key={idx}
-                      className="w-12 h-12 rounded-2xl bg-[#131316] border border-[#d0bcff]/30 flex items-center justify-center text-xl shadow-lg hover:scale-110 transition-transform cursor-pointer"
-                    >
-                      ⭐
-                    </div>
-                  ))
+                  user.badges.map((badgeId, idx) => {
+                    const badgeDef = ALL_BADGES.find((b) => b.id === badgeId) || {
+                      id: badgeId,
+                      name: badgeId.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' '),
+                      description: 'Unlocked achievement',
+                      icon: '🏆',
+                    };
+                    return (
+                      <div
+                        key={`${badgeId}-${idx}`}
+                        className="relative group focus:outline-none"
+                        tabIndex={0}
+                        aria-label={`${badgeDef.name}: ${badgeDef.description}`}
+                      >
+                        <div className="w-12 h-12 rounded-2xl bg-[#131316] border border-[#d0bcff]/30 flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 group-focus:scale-110 group-hover:border-[#d0bcff] group-focus:border-[#d0bcff] transition-all cursor-pointer">
+                          {badgeDef.icon}
+                        </div>
+
+                        {/* Floating Tooltip */}
+                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 rounded-xl bg-[#2a2a2d] border border-[#d0bcff]/40 shadow-2xl text-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-all duration-200 z-50">
+                          <div className="text-xs font-bold font-geist text-white flex items-center justify-center gap-1">
+                            <span>{badgeDef.icon}</span>
+                            <span className="truncate">{badgeDef.name}</span>
+                          </div>
+                          <p className="text-[11px] font-inter text-[#cbc3d7] mt-0.5 leading-snug">
+                            {badgeDef.description}
+                          </p>
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-[#2a2a2d]" />
+                        </div>
+                      </div>
+                    );
+                  })
                 ) : (
                   <p className="text-xs text-[#cbc3d7] font-geist">Complete habits to unlock badges!</p>
                 )}
@@ -507,16 +545,11 @@ export default function Dashboard() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold font-geist text-[#cbc3d7] uppercase mb-1">
-                      Icon Emoji
-                    </label>
-                    <input
-                      value={formIcon}
-                      onChange={(e) => setFormIcon(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#131316] border border-white/10 text-white text-center font-inter text-base outline-none"
-                    />
-                  </div>
+                  <EmojiSelector
+                    label="Habit Icon"
+                    selectedEmoji={formIcon}
+                    onSelectEmoji={setFormIcon}
+                  />
 
                   <div>
                     <label className="block text-xs font-bold font-geist text-[#cbc3d7] uppercase mb-1">
@@ -526,7 +559,7 @@ export default function Dashboard() {
                       type="color"
                       value={formColor}
                       onChange={(e) => setFormColor(e.target.value)}
-                      className="w-full h-10 rounded-xl bg-[#131316] border border-white/10 p-1 cursor-pointer"
+                      className="w-full h-11 rounded-xl bg-[#131316] border border-white/10 p-1 cursor-pointer"
                     />
                   </div>
                 </div>

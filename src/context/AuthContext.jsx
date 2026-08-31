@@ -7,6 +7,7 @@ const EMPTY_USER = {
   email: '',
   avatar: null,
   xp: 0,
+  todayXP: 0,
   level: 1,
   badges: [],
   currentStreak: 0,
@@ -14,22 +15,15 @@ const EMPTY_USER = {
   totalCompletions: 0,
   isPremium: false,
   premiumExpiresAt: null,
+  role: 'user',
+  status: 'active',
   timezone: 'UTC',
   theme: 'dark',
   notificationPreferences: { emailNotifications: true, streakAlerts: true },
 };
 
-
-const ALL_BADGES = [
-  { id: 'first_step', name: 'First Step', description: 'Complete your very first habit.', icon: '⭐', category: 'Milestones', target: 1 },
-  { id: 'consistency_starter', name: 'Consistency Starter', description: 'Maintain a 3-day streak on any habit.', icon: '🔥', category: 'Streaks', target: 3 },
-  { id: 'consistency_king', name: 'Consistency King', description: 'Maintain a 7-day streak on any habit.', icon: '🏆', category: 'Streaks', target: 7 },
-  { id: 'habit_master', name: 'Habit Master', description: 'Complete 30 total habit sessions.', icon: '🎯', category: 'Milestones', target: 30 },
-  { id: 'xp_hunter', name: 'XP Hunter', description: 'Earn 500 total XP.', icon: '💎', category: 'Milestones', target: 500 },
-  { id: 'century_club', name: 'Century Club', description: 'Complete 100 total habit sessions.', icon: '💯', category: 'Milestones', target: 100 },
-  { id: 'perfect_week', name: 'Perfect Week', description: 'Complete all habits for 7 consecutive days.', icon: '📆', category: 'Streaks', target: 7 },
-  { id: 'iron_will', name: 'Iron Will', description: 'Recover a lost streak within 24 hours.', icon: '⚡', category: 'Special Events', target: 1 },
-];
+import { ALL_BADGES } from '../constants/badges';
+export { ALL_BADGES };
 
 const DEMO_FALLBACK_HABITS = [
   {
@@ -237,7 +231,14 @@ export function AuthProvider({ children }) {
       const summaryRes = await usersAPI.getDashboardSummary();
       if (summaryRes.data) {
         const { user: uData, habits: hData } = summaryRes.data;
-        if (uData) setUser((prev) => ({ ...prev, ...uData }));
+        if (uData) {
+          const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if ((!uData.timezone || uData.timezone === 'UTC') && browserTimezone && browserTimezone !== 'UTC') {
+            usersAPI.updateProfile({ timezone: browserTimezone }).catch(() => {});
+            uData.timezone = browserTimezone;
+          }
+          setUser((prev) => ({ ...prev, ...uData }));
+        }
         if (Array.isArray(hData)) {
           setHabits(
             hData.map((h) => ({
@@ -290,16 +291,18 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', authToken);
     setToken(authToken);
     setIsLoggedIn(true);
+    let authenticatedUser = null;
     try {
       const meRes = await authAPI.getMe();
       if (meRes.data?.user) {
         setUser(meRes.data.user);
+        authenticatedUser = meRes.data.user;
       }
     } catch (err) {
       console.warn('[AuthContext] getMe error after OAuth login:', err.message);
     }
     await fetchUserData();
-    return { success: true };
+    return { success: true, user: authenticatedUser };
   }, [fetchUserData]);
 
   const login = useCallback(async (email, password) => {
@@ -311,7 +314,7 @@ export function AuthProvider({ children }) {
         setToken(authToken);
         setUser(res.data.user);
         setIsLoggedIn(true);
-        return { success: true };
+        return { success: true, user: res.data.user };
       }
       return { success: false, message: 'Invalid response from server' };
     } catch (err) {
@@ -454,6 +457,7 @@ export function AuthProvider({ children }) {
 
       setUser((prev) => {
         const newXP = prev.xp + 10;
+        const newTodayXP = (prev.todayXP || 0) + 10;
         const newLevel = Math.floor(Math.sqrt(newXP / 100)) + 1;
         if (newLevel > prev.level) {
           setLevelUpModalLevel(newLevel);
@@ -461,7 +465,7 @@ export function AuthProvider({ children }) {
         } else {
           showNotification({ type: 'xp', amount: 10 });
         }
-        return { ...prev, xp: newXP, level: newLevel, totalCompletions: (prev.totalCompletions || 0) + 1 };
+        return { ...prev, xp: newXP, todayXP: newTodayXP, level: newLevel, totalCompletions: (prev.totalCompletions || 0) + 1 };
       });
 
       try {
@@ -476,6 +480,7 @@ export function AuthProvider({ children }) {
           setUser((prev) => ({
             ...prev,
             xp: updatedUser.xp,
+            todayXP: updatedUser.todayXP !== undefined ? updatedUser.todayXP : prev.todayXP,
             level: updatedUser.level,
             badges: updatedUser.badges,
             isPremium: updatedUser.isPremium,
@@ -486,11 +491,24 @@ export function AuthProvider({ children }) {
           setLevelUpModalLevel(newLevel);
         }
       } catch (err) {
-        console.warn('[AuthContext] Habit check-in error (rolling back):', err.message);
-        setUser(prevUser);
-        setHabits(prevHabits);
+        console.warn('[AuthContext] Habit check-in error:', err.message);
         const errMsg = err.response?.data?.message || 'Check-in failed. Please try again.';
-        showNotification({ type: 'habit_added', title: errMsg });
+        if (
+          err.response?.status === 400 &&
+          (errMsg.toLowerCase().includes('already completed') || errMsg.includes('DUPLICATE_CHECKIN'))
+        ) {
+          // If already completed in DB, keep it marked completedToday: true
+          setHabits((prev) =>
+            prev.map((h) =>
+              h.id === habitId || h._id === habitId ? { ...h, completedToday: true } : h
+            )
+          );
+          showNotification({ type: 'habit_added', title: 'Habit already completed for today!' });
+        } else {
+          setUser(prevUser);
+          setHabits(prevHabits);
+          showNotification({ type: 'habit_added', title: errMsg });
+        }
       } finally {
         setCompletingHabits((prev) => {
           const copy = { ...prev };

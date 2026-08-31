@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +38,7 @@ export default function AppLayout({ children }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const notificationsRef = useRef(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -54,6 +55,20 @@ export default function AppLayout({ children }) {
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications, user]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setNotificationsOpen(false);
+      }
+    }
+    if (notificationsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [notificationsOpen]);
 
   // Keyboard shortcut Ctrl+K to open Search
   useEffect(() => {
@@ -138,31 +153,33 @@ export default function AppLayout({ children }) {
             </button>
 
             {/* Notifications Trigger */}
-            <div className="relative">
+            <div className="relative" ref={notificationsRef}>
               <button
-                onClick={() => setNotificationsOpen((o) => !o)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setNotificationsOpen((o) => !o);
+                }}
                 className="p-2 rounded-xl text-[#cbc3d7] hover:text-white hover:bg-white/5 transition-colors relative cursor-pointer"
+                aria-label="Toggle notifications panel"
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#a078ff] shadow-[0_0_8px_#a078ff]" />
+                  <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-[#a078ff] text-[10px] font-bold font-geist text-[#340080] flex items-center justify-center shadow-[0_0_8px_#a078ff]">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
                 )}
               </button>
 
               {/* Notifications Popover Panel */}
               <AnimatePresence>
                 {notificationsOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setNotificationsOpen(false)}
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                      className="absolute -right-2 sm:right-0 top-full mt-2 w-[calc(100vw-32px)] sm:w-80 rounded-2xl bg-[#1f1f22] border border-white/10 shadow-2xl p-4 z-50 space-y-3"
-                    >
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute -right-2 sm:right-0 top-full mt-2 w-[calc(100vw-32px)] sm:w-80 rounded-2xl bg-[#1f1f22] border border-white/10 shadow-2xl p-4 z-50 space-y-3"
+                  >
                       <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
                         <div className="flex items-center gap-2">
                           <Bell className="w-4 h-4 text-[#d0bcff]" />
@@ -209,7 +226,6 @@ export default function AppLayout({ children }) {
                         )}
                       </div>
                     </motion.div>
-                  </>
                 )}
               </AnimatePresence>
             </div>

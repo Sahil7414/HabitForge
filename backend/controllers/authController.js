@@ -4,10 +4,11 @@ import { Notification } from '../models/Notification.js';
 import { isMongoConnected, inMemoryDB } from '../config/inMemoryStore.js';
 import { checkAndUpdateUserPremiumStatus } from '../utils/subscriptionUtils.js';
 
+const MASTER_ADMIN_EMAIL = 'sahiljadhav7414@gmail.com';
 
-const generateToken = (id) => {
+const generateToken = (id, role = 'user') => {
   return jwt.sign(
-    { id },
+    { id, role },
     process.env.JWT_SECRET,
     { expiresIn: '30d' }
   );
@@ -81,6 +82,9 @@ export const googleCallback = async (req, res) => {
     }
 
     const { sub: googleId, email, name, picture } = googleUser;
+    const cleanEmail = email.toLowerCase().trim();
+    const isMasterAdmin = cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase();
+    const assignedRole = isMasterAdmin ? 'admin' : 'user';
 
     let user;
 
@@ -88,19 +92,24 @@ export const googleCallback = async (req, res) => {
       user = await User.findOne({ googleId });
 
       if (!user) {
-        user = await User.findOne({ email });
+        user = await User.findOne({ email: cleanEmail });
         if (user) {
           user.googleId = googleId;
           user.authProvider = 'google';
+          if (isMasterAdmin) user.role = 'admin';
+          if (!user.role) user.role = assignedRole;
+          if (!user.status) user.status = 'active';
           if (!user.avatar && picture) user.avatar = picture;
           await user.save();
         } else {
           user = await User.create({
             name: name || 'Google User',
-            email,
+            email: cleanEmail,
             avatar: picture || null,
             googleId,
             authProvider: 'google',
+            role: assignedRole,
+            status: 'active',
             xp: 0,
             level: 1,
             badges: [],
@@ -114,19 +123,26 @@ export const googleCallback = async (req, res) => {
             message: 'Start forging your daily routine! Click "+ NEW HABIT" on the Dashboard to create your first habit.',
           });
         }
+      } else {
+        if (isMasterAdmin && user.role !== 'admin') {
+          user.role = 'admin';
+          await user.save();
+        }
       }
     } else {
-      user = inMemoryDB.users.find((u) => u.googleId === googleId || u.email === email);
+      user = inMemoryDB.users.find((u) => u.googleId === googleId || u.email?.toLowerCase() === cleanEmail);
       if (!user) {
         const newId = `user_g_${Date.now()}`;
         user = {
           _id: newId,
           id: newId,
           name: name || 'Google User',
-          email,
+          email: cleanEmail,
           avatar: picture || null,
           googleId,
           authProvider: 'google',
+          role: assignedRole,
+          status: 'active',
           xp: 0,
           level: 1,
           badges: [],
@@ -139,11 +155,16 @@ export const googleCallback = async (req, res) => {
       } else {
         user.googleId = googleId;
         user.authProvider = 'google';
+        if (isMasterAdmin) user.role = 'admin';
         if (!user.avatar && picture) user.avatar = picture;
       }
     }
 
-    const token = generateToken(user._id || user.id);
+    if (user.status === 'blocked') {
+      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Your account has been blocked by an administrator.')}`);
+    }
+
+    const token = generateToken(user._id || user.id, user.role || 'user');
     return res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
   } catch (err) {
     console.error('[Google Callback Exception]', err);
@@ -161,13 +182,24 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
+    const cleanEmail = email.toLowerCase().trim();
+    const isMasterAdmin = cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase();
+    const assignedRole = isMasterAdmin ? 'admin' : 'user';
+
     if (isMongoConnected()) {
-      const userExists = await User.findOne({ email });
+      const userExists = await User.findOne({ email: cleanEmail });
       if (userExists) {
         return res.status(400).json({ message: 'User already exists with this email' });
       }
 
-      const user = await User.create({ name, email, password });
+      // Security: Normal registration ALWAYS creates role: 'user' (unless verified master admin identity)
+      const user = await User.create({
+        name,
+        email: cleanEmail,
+        password,
+        role: assignedRole,
+        status: 'active',
+      });
 
       // Create Welcome Notification for New User
       await Notification.create({
@@ -178,12 +210,14 @@ export const registerUser = async (req, res) => {
       });
 
       return res.status(201).json({
-        token: generateToken(user._id),
+        token: generateToken(user._id, user.role),
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
           avatar: user.avatar,
+          role: user.role || 'user',
+          status: user.status || 'active',
           xp: user.xp,
           level: user.level,
           badges: user.badges,
@@ -195,7 +229,7 @@ export const registerUser = async (req, res) => {
       });
     } else {
       // Standalone mode in-memory registration
-      const existing = inMemoryDB.users.find(u => u.email === email);
+      const existing = inMemoryDB.users.find((u) => u.email?.toLowerCase() === cleanEmail);
       if (existing) {
         return res.status(400).json({ message: 'User already exists with this email' });
       }
@@ -205,8 +239,10 @@ export const registerUser = async (req, res) => {
         _id: newId,
         id: newId,
         name,
-        email,
+        email: cleanEmail,
         password,
+        role: assignedRole,
+        status: 'active',
         xp: 0,
         level: 1,
         badges: [],
@@ -229,12 +265,14 @@ export const registerUser = async (req, res) => {
       });
 
       return res.status(201).json({
-        token: generateToken(newUser._id),
+        token: generateToken(newUser._id, newUser.role),
         user: {
           id: newUser._id,
           name: newUser.name,
           email: newUser.email,
           avatar: null,
+          role: newUser.role || 'user',
+          status: newUser.status || 'active',
           xp: 0,
           level: 1,
           badges: [],
@@ -260,19 +298,33 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
+    const cleanEmail = email.toLowerCase().trim();
+    const isMasterAdmin = cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase();
+
     if (isMongoConnected()) {
-      const user = await User.findOne({ email }).select('+password');
+      const user = await User.findOne({ email: cleanEmail }).select('+password');
 
       if (user && (await user.matchPassword(password))) {
+        if (user.status === 'blocked') {
+          return res.status(403).json({ message: 'Your account has been blocked by an administrator.' });
+        }
+
+        if (isMasterAdmin && user.role !== 'admin') {
+          user.role = 'admin';
+          await user.save();
+        }
+
         const { isPremium, premiumExpiresAt } = await checkAndUpdateUserPremiumStatus(user);
 
         return res.json({
-          token: generateToken(user._id),
+          token: generateToken(user._id, user.role || 'user'),
           user: {
             id: user._id,
             name: user.name,
             email: user.email,
             avatar: user.avatar,
+            role: user.role || 'user',
+            status: user.status || 'active',
             xp: user.xp,
             level: user.level,
             badges: user.badges,
@@ -288,16 +340,26 @@ export const loginUser = async (req, res) => {
       }
     } else {
       // Standalone mode in-memory login verification
-      const user = inMemoryDB.users.find(u => u.email === email);
+      const user = inMemoryDB.users.find((u) => u.email?.toLowerCase() === cleanEmail);
       if (user && user.password === password) {
+        if (user.status === 'blocked') {
+          return res.status(403).json({ message: 'Your account has been blocked by an administrator.' });
+        }
+
+        if (isMasterAdmin && user.role !== 'admin') {
+          user.role = 'admin';
+        }
+
         const { isPremium, premiumExpiresAt } = await checkAndUpdateUserPremiumStatus(user);
         return res.json({
-          token: generateToken(user._id),
+          token: generateToken(user._id, user.role || 'user'),
           user: {
             id: user._id,
             name: user.name,
             email: user.email,
             avatar: user.avatar || null,
+            role: user.role || 'user',
+            status: user.status || 'active',
             xp: user.xp || 0,
             level: user.level || 1,
             badges: user.badges || [],
@@ -308,12 +370,14 @@ export const loginUser = async (req, res) => {
             notificationPreferences: user.notificationPreferences || { emailNotifications: true, streakAlerts: true },
           },
         });
-      } else if (email === 'alex@habitforge.com' && password === 'password123') {
+      } else if (cleanEmail === 'alex@habitforge.com' && password === 'password123') {
         const alexUser = {
           id: 'alex_123',
           _id: 'alex_123',
           name: 'Alex Rivera',
           email: 'alex@habitforge.com',
+          role: 'user',
+          status: 'active',
           xp: 1240,
           level: 12,
           badges: ['first_step', 'consistency_starter', 'consistency_king', 'habit_master', 'xp_hunter'],
@@ -324,7 +388,7 @@ export const loginUser = async (req, res) => {
           notificationPreferences: { emailNotifications: true, streakAlerts: true },
         };
         return res.json({
-          token: generateToken(alexUser.id),
+          token: generateToken(alexUser.id, alexUser.role),
           user: alexUser,
         });
       } else {
@@ -343,6 +407,10 @@ export const getMe = async (req, res) => {
     if (isMongoConnected()) {
       const user = await User.findById(req.user._id);
       if (!user) return res.status(404).json({ message: 'User not found' });
+      if (user.status === 'blocked') {
+        return res.status(403).json({ message: 'Access denied: Your account has been blocked by administrator' });
+      }
+
       const { isPremium, premiumExpiresAt } = await checkAndUpdateUserPremiumStatus(user);
 
       return res.json({
@@ -351,6 +419,8 @@ export const getMe = async (req, res) => {
           name: user.name,
           email: user.email,
           avatar: user.avatar,
+          role: user.role || 'user',
+          status: user.status || 'active',
           xp: user.xp,
           level: user.level,
           badges: user.badges,
@@ -363,12 +433,18 @@ export const getMe = async (req, res) => {
       });
     } else {
       const { isPremium, premiumExpiresAt } = await checkAndUpdateUserPremiumStatus(req.user);
+      if (req.user.status === 'blocked') {
+        return res.status(403).json({ message: 'Your account has been blocked by an administrator.' });
+      }
+
       return res.json({
         user: {
           id: req.user._id || req.user.id,
           name: req.user.name,
           email: req.user.email,
           avatar: req.user.avatar || null,
+          role: req.user.role || 'user',
+          status: req.user.status || 'active',
           xp: req.user.xp || 0,
           level: req.user.level || 1,
           badges: req.user.badges || [],
@@ -384,4 +460,3 @@ export const getMe = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-

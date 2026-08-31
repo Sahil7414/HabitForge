@@ -107,10 +107,10 @@ export async function sendEmail({ to, subject, html, attachments = [], userName 
  * Send Premium Purchase Confirmation Email with Attached PDF Receipt
  * Idempotency Protection: Checks receiptEmailStatus to prevent duplicate automatic success emails.
  */
-export async function sendPremiumConfirmationEmail({ user, payment }) {
+export async function sendPremiumConfirmationEmail({ user, payment, force = false }) {
   if (!user || !user.email) return;
 
-  if (payment.receiptEmailStatus === 'sent') {
+  if (!force && payment.receiptEmailStatus === 'sent') {
     console.log(`[Email Service] Success email already sent for payment ${payment.razorpayPaymentId || payment._id}`);
     return;
   }
@@ -134,6 +134,7 @@ export async function sendPremiumConfirmationEmail({ user, payment }) {
       planName: 'HabitForge Premium — 30 Days',
       amount: payment.amount || 99,
       currency: payment.currency || 'INR',
+      paymentStatus: payment.status || 'paid',
       paymentMethod: payment.paymentMethod || 'UPI / Online Checkout',
       razorpayPaymentId: payment.razorpayPaymentId || 'N/A',
       razorpayOrderId: payment.razorpayOrderId || 'N/A',

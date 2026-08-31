@@ -21,8 +21,12 @@ export default function AuthCallback() {
     }
 
     if (token) {
-      loginWithToken(token).then(() => {
-        navigate('/dashboard', { replace: true });
+      loginWithToken(token).then((res) => {
+        if (res?.user?.role === 'admin') {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       });
     } else {
       setError('No authentication token received from Google callback.');

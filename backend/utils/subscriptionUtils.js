@@ -3,13 +3,9 @@ import { Notification } from '../models/Notification.js';
 import { sendPremiumExpirationEmail } from '../services/emailService.js';
 import { isMongoConnected, inMemoryDB } from '../config/inMemoryStore.js';
 
-export function calculateNewExpiryDate(currentExpiresAt) {
+export function calculateNewExpiryDate() {
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
   const now = new Date();
-
-  if (currentExpiresAt && new Date(currentExpiresAt) > now) {
-    return new Date(new Date(currentExpiresAt).getTime() + THIRTY_DAYS_MS);
-  }
   return new Date(now.getTime() + THIRTY_DAYS_MS);
 }
 

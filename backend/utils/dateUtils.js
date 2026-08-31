@@ -1,17 +1,29 @@
-import { format, subDays, parseISO, isSameDay, differenceInCalendarDays, differenceInCalendarWeeks, startOfWeek } from 'date-fns';
+import { format, parseISO, differenceInCalendarDays, differenceInCalendarWeeks, startOfWeek } from 'date-fns';
 
 /**
- * Returns today's date formatted as YYYY-MM-DD in normalized local time
+ * Returns today's date formatted as YYYY-MM-DD in the user's specific IANA timezone (e.g. 'Asia/Kolkata', 'UTC')
  */
-export function getNormalizedToday() {
-  return format(new Date(), 'yyyy-MM-dd');
+export function getNormalizedToday(timezone = 'UTC') {
+  try {
+    const options = { timeZone: timezone || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' };
+    const formatter = new Intl.DateTimeFormat('en-CA', options); // 'en-CA' outputs YYYY-MM-DD
+    return formatter.format(new Date());
+  } catch (err) {
+    return new Date().toISOString().split('T')[0];
+  }
 }
 
 /**
  * Formats a Date object to YYYY-MM-DD
  */
-export function formatNormalizedDate(date) {
-  return format(date, 'yyyy-MM-dd');
+export function formatNormalizedDate(date = new Date(), timezone = 'UTC') {
+  try {
+    const options = { timeZone: timezone || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' };
+    const formatter = new Intl.DateTimeFormat('en-CA', options);
+    return formatter.format(date instanceof Date ? date : new Date(date));
+  } catch (err) {
+    return format(date instanceof Date ? date : new Date(date), 'yyyy-MM-dd');
+  }
 }
 
 /**
@@ -57,4 +69,3 @@ export function isSameCompletionPeriod(dateStrA, dateStrB, frequency = 'DAILY') 
   const weekB = format(startOfWeek(dB, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   return weekA === weekB;
 }
-

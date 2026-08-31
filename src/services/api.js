@@ -56,9 +56,21 @@ export const habitsAPI = {
 };
 
 export const analyticsAPI = {
-  getCompletions: (period = '30d') => api.get(`/analytics/completions?period=${period}`),
-  getHeatmap: (days = 90, habitId = null) =>
-    api.get(`/analytics/heatmap?days=${days}${habitId ? `&habitId=${habitId}` : ''}`),
+  getCompletions: (period = '30d', category = null) =>
+    api.get('/analytics/completions', {
+      params: {
+        period,
+        ...(category && category !== 'All Categories' ? { category } : {}),
+      },
+    }),
+  getHeatmap: (days = 90, habitId = null, category = null) =>
+    api.get('/analytics/heatmap', {
+      params: {
+        days,
+        ...(habitId && habitId !== 'all' ? { habitId } : {}),
+        ...(category && category !== 'All Categories' ? { category } : {}),
+      },
+    }),
   getDayDetails: (date) => api.get(`/analytics/day-details?date=${date}`),
   getOverview: () => api.get('/analytics/overview'),
   exportCSV: () =>
@@ -85,6 +97,7 @@ export const socialAPI = {
   cancelRequest: (requestId) => api.delete(`/social/friends/request/${requestId}`),
   removeFriend: (friendId) => api.delete(`/social/friends/${friendId}`),
   getLeaderboard: () => api.get('/social/leaderboard'),
+  getFriendsLeaderboard: () => api.get('/social/leaderboard/friends'),
 };
 
 export const notificationAPI = {
@@ -109,6 +122,14 @@ export const emailAPI = {
   getStatus: () => api.get('/email/status'),
   sendTest: () => api.post('/email/test'),
 };
+
+export const adminAPI = {
+  getOverview: () => api.get('/admin/overview'),
+  getUsers: (params) => api.get('/admin/users', { params }),
+  getUserDetails: (id) => api.get(`/admin/users/${id}`),
+  updateUserStatus: (id, status) => api.put(`/admin/users/${id}/status`, { status }),
+};
+
 
 
 

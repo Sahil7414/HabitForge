@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import AppLayout from '../components/AppLayout';
 import { socialAPI } from '../services/api';
-import { Users, Search, UserPlus, Check, X, UserMinus, Crown, Clock } from 'lucide-react';
+import { Users, Search, UserPlus, Check, X, UserMinus, Crown, Clock, Lock } from 'lucide-react';
 
 export default function Social() {
   const { showNotification } = useAuth();
@@ -35,9 +35,13 @@ export default function Social() {
     loadSocialData();
   }, [loadSocialData]);
 
-  // Live Typeahead Search effect - queries backend with searchQuery or loads top suggested users
+  // Live Typeahead Search effect - queries backend with searchQuery
   useEffect(() => {
     const timer = setTimeout(async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        return;
+      }
       setSearching(true);
       try {
         const res = await socialAPI.searchUsers(searchQuery);
@@ -54,43 +58,73 @@ export default function Social() {
 
   async function handleSendRequest(receiverId) {
     try {
-      await socialAPI.sendRequest(receiverId);
-      showNotification({ type: 'habit_added', title: 'Friend Request Sent!', sub: 'Request delivered to user.' });
+      const res = await socialAPI.sendRequest(receiverId);
+      showNotification({
+        type: 'habit_added',
+        title: 'Friend Request',
+        sub: res.data?.message || 'Friend request delivered.',
+      });
       loadSocialData();
     } catch (err) {
-      showNotification({ type: 'habit_added', title: 'Friend Request Sent!', sub: err.response?.data?.message || 'Request sent!' });
+      showNotification({
+        type: 'deleted',
+        title: 'Could Not Send Request',
+        sub: err.response?.data?.message || 'Failed to send friend request.',
+      });
     }
   }
 
   async function handleRespond(requestId, action) {
     try {
-      await socialAPI.respondRequest(requestId, action);
-      showNotification({ type: 'habit_added', title: `Friend request ${action}`, sub: 'Friends list updated.' });
+      const res = await socialAPI.respondRequest(requestId, action);
+      showNotification({
+        type: 'habit_added',
+        title: action === 'accepted' ? 'Friend Request Accepted 🎉' : 'Friend Request Declined',
+        sub: res.data?.message || `Request ${action}.`,
+      });
       loadSocialData();
     } catch (err) {
-      showNotification({ type: 'habit_added', title: 'Request updated.', sub: 'Friendship status updated.' });
+      showNotification({
+        type: 'deleted',
+        title: 'Response Failed',
+        sub: err.response?.data?.message || 'Could not update friend request.',
+      });
     }
   }
 
   async function handleRemoveFriend(friendId) {
     try {
-      await socialAPI.removeFriend(friendId);
-      showNotification({ type: 'friend_removed', title: 'Friend Removed', sub: 'User removed from your friends list.' });
+      const res = await socialAPI.removeFriend(friendId);
+      showNotification({
+        type: 'friend_removed',
+        title: 'Friend Removed',
+        sub: res.data?.message || 'User removed from your friends list.',
+      });
       loadSocialData();
     } catch (err) {
-      showNotification({ type: 'friend_removed', title: 'Friend Removed', sub: 'User removed from your friends list.' });
-      loadSocialData();
+      showNotification({
+        type: 'deleted',
+        title: 'Failed to Remove Friend',
+        sub: err.response?.data?.message || 'Could not remove friend.',
+      });
     }
   }
 
   async function handleCancelRequest(requestId) {
     try {
-      await socialAPI.cancelRequest(requestId);
-      showNotification({ type: 'deleted', title: 'Request Cancelled', sub: 'Friend request cancelled.' });
+      const res = await socialAPI.cancelRequest(requestId);
+      showNotification({
+        type: 'deleted',
+        title: 'Request Cancelled',
+        sub: res.data?.message || 'Friend request cancelled.',
+      });
       loadSocialData();
     } catch (err) {
-      showNotification({ type: 'deleted', title: 'Request Cancelled', sub: 'Friend request cancelled.' });
-      loadSocialData();
+      showNotification({
+        type: 'deleted',
+        title: 'Failed to Cancel Request',
+        sub: err.response?.data?.message || 'Could not cancel request.',
+      });
     }
   }
 
@@ -131,11 +165,38 @@ export default function Social() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {searchResults.map((u) => {
-                  const uId = u._id || u.id;
-                  const isFriend = friends.some((f) => f.id === uId || f._id === uId);
+                  const uId = (u._id || u.id).toString();
+                  const isFriend = friends.some((f) => (f.id || f._id)?.toString() === uId);
                   const isPendingSent = pendingRequests.sent.some(
-                    (r) => r.receiver?._id === uId || r.receiver?.id === uId || r.receiver === uId
+                    (r) => (r.receiver?._id || r.receiver?.id || r.receiver)?.toString() === uId
                   );
+                  const receivedReq = pendingRequests.received.find(
+                    (r) => (r.sender?._id || r.sender?.id || r.sender)?.toString() === uId
+                  );
+                  const isPendingReceived = !!receivedReq;
+                  const isBlocked = u.isBlocked || u.status === 'blocked';
+
+                  if (isBlocked) {
+                    return (
+                      <div
+                        key={uId}
+                        className="flex items-center justify-between p-3.5 rounded-2xl bg-[#131316] border border-red-500/30"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center font-bold text-red-400">
+                            {u.name ? u.name[0].toUpperCase() : <Lock className="w-5 h-5" />}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold font-geist text-white">{u.name || 'User'}</h4>
+                            <span className="text-xs text-red-400/90 font-inter">This account is blocked by admin</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] uppercase font-bold font-geist text-red-400 px-2.5 py-1 bg-red-500/10 border border-red-500/30 rounded-lg">
+                          Blocked
+                        </span>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div
@@ -144,44 +205,53 @@ export default function Social() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#a078ff] to-[#0566d9] flex items-center justify-center font-bold font-geist text-white shadow-md">
-                          {u.name[0]}
+                          {u.name ? u.name[0] : 'U'}
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
                             <h4 className="text-sm font-bold font-geist text-white">{u.name}</h4>
                             {u.isPremium && <Crown className="w-3.5 h-3.5 text-[#ffb95f]" />}
                           </div>
-                          <span className="text-xs text-[#cbc3d7] font-inter">Level {u.level} • {u.xp || 0} XP</span>
+                          <span className="text-xs text-[#cbc3d7] font-inter">Level {u.level || 1} • {u.xp || 0} XP</span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleSendRequest(uId)}
-                        disabled={isFriend || isPendingSent}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold font-geist transition-colors ${
-                          isFriend
-                            ? 'bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] cursor-default'
-                            : isPendingSent
-                            ? 'bg-[#ffb95f]/20 border border-[#ffb95f]/40 text-[#ffb95f] cursor-default'
-                            : 'bg-[#a078ff]/20 border border-[#d0bcff]/30 text-[#d0bcff] hover:bg-[#a078ff]/40 cursor-pointer'
-                        }`}
-                      >
-                        {isFriend ? (
-                          <>
+
+                      {isFriend ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold font-geist bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] cursor-default">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Friends</span>
+                        </div>
+                      ) : isPendingSent ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold font-geist bg-[#ffb95f]/20 border border-[#ffb95f]/40 text-[#ffb95f] cursor-default">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Request Sent</span>
+                        </div>
+                      ) : isPendingReceived ? (
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => handleRespond(receivedReq.id || receivedReq._id, 'accepted')}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] hover:bg-[#10b981]/30 text-xs font-bold font-geist transition-colors cursor-pointer"
+                          >
                             <Check className="w-3.5 h-3.5" />
-                            <span>Friends</span>
-                          </>
-                        ) : isPendingSent ? (
-                          <>
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>Requested</span>
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="w-3.5 h-3.5" />
-                            <span>Add</span>
-                          </>
-                        )}
-                      </button>
+                            <span>Accept</span>
+                          </button>
+                          <button
+                            onClick={() => handleRespond(receivedReq.id || receivedReq._id, 'rejected')}
+                            className="p-1.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 transition-colors cursor-pointer"
+                            title="Decline"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleSendRequest(uId)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold font-geist bg-[#a078ff]/20 border border-[#d0bcff]/30 text-[#d0bcff] hover:bg-[#a078ff]/40 cursor-pointer transition-colors"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Add Friend</span>
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -206,7 +276,7 @@ export default function Social() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {pendingRequests.received.map((req) => (
                     <div
-                      key={req.id}
+                      key={req.id || req._id}
                       className="flex items-center justify-between p-4 rounded-2xl bg-[#131316] border border-white/5"
                     >
                       <div className="flex items-center gap-3">
@@ -220,14 +290,14 @@ export default function Social() {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleRespond(req.id, 'accepted')}
+                          onClick={() => handleRespond(req.id || req._id, 'accepted')}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] hover:bg-[#10b981]/30 text-xs font-bold font-geist transition-colors cursor-pointer"
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>Accept</span>
                         </button>
                         <button
-                          onClick={() => handleRespond(req.id, 'rejected')}
+                          onClick={() => handleRespond(req.id || req._id, 'rejected')}
                           className="p-1.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 transition-colors cursor-pointer"
                           title="Decline"
                         >
@@ -249,7 +319,7 @@ export default function Social() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {pendingRequests.sent.map((req) => (
                     <div
-                      key={req.id}
+                      key={req.id || req._id}
                       className="flex items-center justify-between p-4 rounded-2xl bg-[#131316] border border-white/5"
                     >
                       <div className="flex items-center gap-3">
@@ -264,7 +334,7 @@ export default function Social() {
                         </div>
                       </div>
                       <button
-                        onClick={() => handleCancelRequest(req.id)}
+                        onClick={() => handleCancelRequest(req.id || req._id)}
                         className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-xs font-bold font-geist text-[#cbc3d7] hover:text-red-400 border border-white/10 transition-colors cursor-pointer"
                       >
                         Cancel
@@ -291,9 +361,9 @@ export default function Social() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {suggestedFriends.map((u) => {
-                const uId = u._id || u.id;
+                const uId = (u._id || u.id).toString();
                 const isPendingSent = pendingRequests.sent.some(
-                  (r) => r.receiver?._id === uId || r.receiver?.id === uId || r.receiver === uId
+                  (r) => (r.receiver?._id || r.receiver?.id || r.receiver)?.toString() === uId
                 );
 
                 return (
@@ -310,7 +380,7 @@ export default function Social() {
                           <h4 className="font-bold font-geist text-white text-sm">{u.name}</h4>
                           {u.isPremium && <Crown className="w-3.5 h-3.5 text-[#ffb95f]" />}
                         </div>
-                        <span className="text-xs text-[#cbc3d7] font-inter">Level {u.level} • {u.xp || 0} XP</span>
+                        <span className="text-xs text-[#cbc3d7] font-inter">Level {u.level || 1} • {u.xp || 0} XP</span>
                       </div>
                     </div>
                     <button
@@ -330,7 +400,7 @@ export default function Social() {
                       ) : (
                         <>
                           <UserPlus className="w-3.5 h-3.5" />
-                          <span>Add</span>
+                          <span>Add Friend</span>
                         </>
                       )}
                     </button>
@@ -352,35 +422,71 @@ export default function Social() {
             <p className="text-xs text-[#cbc3d7]">Loading friends...</p>
           ) : friends.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {friends.map((f) => (
-                <div
-                  key={f.id}
-                  className="bg-[#131316] border border-white/5 rounded-2xl p-4 flex flex-col justify-between space-y-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#a078ff] to-[#0566d9] flex items-center justify-center text-xl font-bold font-geist text-white shadow-md">
-                      {f.name[0]}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <h4 className="font-bold font-geist text-white text-sm">{f.name}</h4>
-                        {f.isPremium && <Crown className="w-3.5 h-3.5 text-[#ffb95f]" />}
-                      </div>
-                      <span className="text-xs text-[#cbc3d7] font-inter">Level {f.level}</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center border-t border-white/5 pt-3">
-                    <span className="text-xs font-bold font-geist text-[#ffb95f]">{(f.xp || 0).toLocaleString()} XP</span>
-                    <button
-                      onClick={() => handleRemoveFriend(f.id)}
-                      className="p-1.5 rounded-lg text-[#cbc3d7] hover:text-red-400 hover:bg-white/5 transition-colors cursor-pointer"
-                      title="Remove Friend"
+              {friends.map((f) => {
+                const fId = (f.id || f._id).toString();
+                const isBlocked = f.isBlocked || f.status === 'blocked';
+
+                if (isBlocked) {
+                  return (
+                    <div
+                      key={fId}
+                      className="bg-[#131316] border border-red-500/30 rounded-2xl p-4 flex flex-col justify-between space-y-3"
                     >
-                      <UserMinus className="w-4 h-4" />
-                    </button>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 font-bold text-lg font-geist">
+                          {f.name ? f.name[0].toUpperCase() : <Lock className="w-6 h-6" />}
+                        </div>
+                        <div>
+                          <h4 className="font-bold font-geist text-white text-sm">{f.name || 'Friend'}</h4>
+                          <span className="text-xs text-red-400/90 font-inter">This account is blocked by admin</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center border-t border-white/5 pt-3">
+                        <span className="text-[11px] text-red-400 font-mono flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> Blocked by Admin
+                        </span>
+                        <button
+                          onClick={() => handleRemoveFriend(fId)}
+                          className="p-1.5 rounded-lg text-[#cbc3d7] hover:text-red-400 hover:bg-white/5 transition-colors cursor-pointer"
+                          title="Remove Friend"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={fId}
+                    className="bg-[#131316] border border-white/5 rounded-2xl p-4 flex flex-col justify-between space-y-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#a078ff] to-[#0566d9] flex items-center justify-center text-xl font-bold font-geist text-white shadow-md">
+                        {f.name ? f.name[0] : 'F'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-bold font-geist text-white text-sm">{f.name}</h4>
+                          {f.isPremium && <Crown className="w-3.5 h-3.5 text-[#ffb95f]" />}
+                        </div>
+                        <span className="text-xs text-[#cbc3d7] font-inter">Level {f.level || 1}</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-white/5 pt-3">
+                      <span className="text-xs font-bold font-geist text-[#ffb95f]">{(f.xp || 0).toLocaleString()} XP</span>
+                      <button
+                        onClick={() => handleRemoveFriend(fId)}
+                        className="p-1.5 rounded-lg text-[#cbc3d7] hover:text-red-400 hover:bg-white/5 transition-colors cursor-pointer"
+                        title="Remove Friend"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-xs text-[#cbc3d7] py-4">You haven't added any friends yet. Use the search bar above to find friends!</p>

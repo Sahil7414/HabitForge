@@ -53,7 +53,7 @@ function getHeatmapLevelStyle(cell) {
   };
 }
 
-function HeatmapCell({ cell, rowIndex, onClickDate }) {
+function HeatmapCell({ cell, rowIndex, colIndex, totalCols, onClickDate }) {
   const [hovered, setHovered] = useState(false);
 
   if (cell.isPlaceholder) {
@@ -62,6 +62,8 @@ function HeatmapCell({ cell, rowIndex, onClickDate }) {
 
   const style = getHeatmapLevelStyle(cell);
   const isTopRow = rowIndex < 2;
+  const isNearLeft = colIndex < 3;
+  const isNearRight = colIndex > totalCols - 4;
 
   return (
     <div className="relative group">
@@ -73,16 +75,20 @@ function HeatmapCell({ cell, rowIndex, onClickDate }) {
         style={{
           ...style,
           transform: hovered && !cell.isFuture ? 'scale(1.35)' : 'scale(1)',
-          zIndex: hovered ? 20 : 1,
+          zIndex: hovered ? 30 : 1,
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       />
       {hovered && (
         <div
-          className={`absolute left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-[#131316] border border-white/20 text-white text-[11px] font-geist font-medium whitespace-nowrap shadow-2xl z-50 pointer-events-none ${
-            isTopRow ? 'top-full mt-2' : 'bottom-full mb-2'
-          }`}
+          className={`absolute px-3 py-1.5 rounded-xl bg-[#1b1b1e] border border-white/20 text-white text-[11px] font-geist font-medium whitespace-nowrap shadow-2xl z-50 pointer-events-none ${
+            isNearLeft
+              ? 'left-0'
+              : isNearRight
+              ? 'right-0'
+              : 'left-1/2 -translate-x-1/2'
+          } ${isTopRow ? 'top-full mt-2' : 'bottom-full mb-2'}`}
         >
           <span className="font-bold text-[#d0bcff]">{cell.date || cell.fullDate}</span>
           <br />
@@ -104,9 +110,10 @@ export default function Analytics() {
   const [period, setPeriod] = useState('7d');
   const [chartType, setChartType] = useState('line');
   const [chartData, setChartData] = useState([]);
+  const [periodHabitBreakdown, setPeriodHabitBreakdown] = useState([]);
   const [heatmapCellsData, setHeatmapCellsData] = useState([]);
   const [heatmapMeta, setHeatmapMeta] = useState({ totalCompletions: 0, activeDaysCount: 0 });
-  const [selectedHabitId, setSelectedHabitId] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [loadingHeatmap, setLoadingHeatmap] = useState(true);
   const [heatmapError, setHeatmapError] = useState(false);
   const [overview, setOverview] = useState(null);
@@ -118,24 +125,45 @@ export default function Analytics() {
 
   const [heatmapDays, setHeatmapDays] = useState(30);
 
-  // Load completion chart data according to selected period
+  // Load completion chart data and period-specific breakdown according to selected period
   useEffect(() => {
+    let isSubscribed = true;
+    const catFilter = selectedCategory === 'All Categories' ? null : selectedCategory;
     analyticsAPI
-      .getCompletions(period)
-      .then((res) => setChartData(res.data))
-      .catch(() => setChartData([]));
-  }, [period]);
+      .getCompletions(period, catFilter)
+      .then((res) => {
+        if (isSubscribed) {
+          if (res.data?.chartData) {
+            setChartData(res.data.chartData);
+            setPeriodHabitBreakdown(res.data.habitBreakdown || []);
+          } else if (Array.isArray(res.data)) {
+            setChartData(res.data);
+          }
+        }
+      })
+      .catch(() => {
+        if (isSubscribed) {
+          setChartData([]);
+          setPeriodHabitBreakdown([]);
+        }
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [period, selectedCategory]);
 
   // Load heatmap data (30, 90, or 365 days)
   useEffect(() => {
+    let isSubscribed = true;
     setLoadingHeatmap(true);
     setHeatmapError(false);
-    const habitFilter = selectedHabitId === 'all' ? null : selectedHabitId;
+    const catFilter = selectedCategory === 'All Categories' ? null : selectedCategory;
 
     analyticsAPI
-      .getHeatmap(heatmapDays, habitFilter)
+      .getHeatmap(heatmapDays, null, catFilter)
       .then((res) => {
-        if (res.data) {
+        if (isSubscribed && res.data) {
           setHeatmapCellsData(res.data.cells || res.data || []);
           setHeatmapMeta({
             totalCompletions: res.data.totalCompletions || 0,
@@ -143,9 +171,17 @@ export default function Analytics() {
           });
         }
       })
-      .catch(() => setHeatmapError(true))
-      .finally(() => setLoadingHeatmap(false));
-  }, [user.isPremium, selectedHabitId, heatmapDays]);
+      .catch(() => {
+        if (isSubscribed) setHeatmapError(true);
+      })
+      .finally(() => {
+        if (isSubscribed) setLoadingHeatmap(false);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [user.isPremium, selectedCategory, heatmapDays]);
 
   // Load overview metrics
   useEffect(() => {
@@ -196,12 +232,29 @@ export default function Analytics() {
     }
   }
 
-  // Dynamic habit breakdown from actual user habits
+  // Dynamic habit breakdown updated dynamically based on the selected period & category filter
   const habitBreakdown = useMemo(() => {
+    if (periodHabitBreakdown && periodHabitBreakdown.length > 0) {
+      if (selectedCategory && selectedCategory !== 'All Categories') {
+        const cleanCat = selectedCategory.replace(/[^\w\s-]/gi, '').trim().toLowerCase();
+        return periodHabitBreakdown.filter((h) => {
+          const orig = habits.find((origH) => (origH.id || origH._id) === h.id);
+          return !orig || (orig.category || '').toLowerCase().includes(cleanCat);
+        });
+      }
+      return periodHabitBreakdown;
+    }
+
     if (!habits || habits.length === 0) return [];
-    return habits.map((h) => {
-      const target = h.weeklyTarget || (h.frequency === 'DAILY' ? 7 : 1);
-      const prog = h.weeklyProgress || 0;
+    let list = habits;
+    if (selectedCategory && selectedCategory !== 'All Categories') {
+      const cleanCat = selectedCategory.replace(/[^\w\s-]/gi, '').trim().toLowerCase();
+      list = habits.filter((h) => (h.category || '').toLowerCase().includes(cleanCat));
+    }
+    const daysCount = period === '7d' ? 7 : period === '1m' || period === '30d' ? 30 : period === '90d' ? 90 : 365;
+    return list.map((h) => {
+      const target = h.frequency === 'WEEKLY' ? Math.max(1, Math.round(daysCount / 7)) : daysCount;
+      const prog = h.totalCompletions || 0;
       const rate = Math.min(100, Math.max(0, Math.round((prog / target) * 100)));
       return {
         id: h.id || h._id,
@@ -212,7 +265,7 @@ export default function Analytics() {
         totalCompletions: h.totalCompletions || 0,
       };
     });
-  }, [habits]);
+  }, [periodHabitBreakdown, habits, selectedCategory, period]);
 
   // Group heatmap cells into 7-day columns (Sun-Sat)
   const { heatmapCols, monthHeaders } = useMemo(() => {
@@ -406,7 +459,12 @@ export default function Analytics() {
               <div className="flex items-center gap-3">
                 {/* Time Range Filter Pills */}
                 <div className="flex gap-1 bg-[#131316] p-1 rounded-xl border border-white/5 text-xs font-geist font-bold">
-                  {['7d', '30d', '90d', '1y'].map((p) => (
+                  {[
+                    { id: '7d', label: '7D' },
+                    { id: '1m', label: '1M' },
+                    { id: '90d', label: '90D' },
+                    { id: '1y', label: '1Y' },
+                  ].map(({ id: p, label }) => (
                     <button
                       key={p}
                       onClick={() => {
@@ -421,7 +479,7 @@ export default function Analytics() {
                         period === p ? 'bg-[#a078ff] text-[#340080]' : 'text-[#cbc3d7] hover:text-white'
                       }`}
                     >
-                      {p.toUpperCase()}
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -515,7 +573,11 @@ export default function Analytics() {
             <div className="flex flex-wrap items-center gap-3">
               {/* Range Selector Pills */}
               <div className="flex items-center gap-1 bg-[#131316] p-1 rounded-xl border border-white/10 text-xs font-geist font-bold">
-                {[30, 90, 365].map((d) => (
+                {[
+                  { days: 30, label: '1 Month' },
+                  { days: 90, label: '90 Days' },
+                  { days: 365, label: '1 Year 👑' },
+                ].map(({ days: d, label }) => (
                   <button
                     key={d}
                     onClick={() => {
@@ -532,25 +594,46 @@ export default function Analytics() {
                         : 'text-[#cbc3d7] hover:text-white'
                     }`}
                   >
-                    {d === 365 ? '1 Year 👑' : `${d} Days`}
+                    {label}
                   </button>
                 ))}
               </div>
 
-              {/* Habit Filter Dropdown */}
+              {/* Category Filter Dropdown (Just Only Categories) */}
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-[#d0bcff]" />
                 <select
-                  value={selectedHabitId}
-                  onChange={(e) => setSelectedHabitId(e.target.value)}
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
                   className="px-3 py-1.5 rounded-xl bg-[#131316] border border-white/10 text-white font-geist text-xs outline-none focus:border-[#d0bcff] cursor-pointer"
                 >
-                  <option value="all">All Habits</option>
-                  {habits.map((h) => (
-                    <option key={h.id || h._id} value={h.id || h._id}>
-                      {h.icon || '🏃'} {h.title}
-                    </option>
-                  ))}
+                  <option value="All Categories">All Categories</option>
+                  {Array.from(
+                    new Set([
+                      'Health',
+                      'Fitness',
+                      'Learning',
+                      'Productivity',
+                      'Mindfulness',
+                      'Personal',
+                      ...habits.map((h) => h.category).filter(Boolean),
+                    ])
+                  ).map((cat) => {
+                    const iconMap = {
+                      Health: '❤️',
+                      Fitness: '🏃',
+                      Learning: '📚',
+                      Productivity: '⚡',
+                      Mindfulness: '🧘',
+                      Personal: '🎯',
+                    };
+                    const icon = iconMap[cat] || '✨';
+                    return (
+                      <option key={cat} value={cat}>
+                        {icon} {cat}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -633,6 +716,8 @@ export default function Analytics() {
                             key={`${ci}-${ri}`}
                             cell={cell}
                             rowIndex={ri}
+                            colIndex={ci}
+                            totalCols={heatmapCols.length}
                             onClickDate={handleCellClick}
                           />
                         ))}

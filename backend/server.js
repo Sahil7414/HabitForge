@@ -20,6 +20,7 @@ import socialRoutes from './routes/socialRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 import { User } from './models/User.js';
 import { Habit } from './models/Habit.js';
@@ -104,6 +105,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 app.use((req, res) => {
@@ -136,8 +138,8 @@ async function autoSeedIfEmpty() {
         name: 'Sarah Connor',
         email: 'sarah@habitforge.com',
         password: 'password123',
-        xp: 1850,
-        level: calculateLevel(1850),
+        xp: 4200,
+        level: calculateLevel(4200),
         badges: ['first_step', 'consistency_king', 'habit_master', 'century_club'],
         isPremium: false,
       });
@@ -146,8 +148,8 @@ async function autoSeedIfEmpty() {
         name: 'John Doe',
         email: 'john@habitforge.com',
         password: 'password123',
-        xp: 980,
-        level: calculateLevel(980),
+        xp: 2900,
+        level: calculateLevel(2900),
         badges: ['first_step', 'consistency_starter'],
         isPremium: false,
       });
@@ -156,11 +158,19 @@ async function autoSeedIfEmpty() {
         name: 'Emma Watson',
         email: 'emma@habitforge.com',
         password: 'password123',
-        xp: 2200,
-        level: calculateLevel(2200),
+        xp: 5400,
+        level: calculateLevel(5400),
         badges: ['first_step', 'consistency_king', 'habit_master', 'xp_hunter', 'century_club'],
         isPremium: true,
       });
+
+      // Weekly XP transactions for seed users
+      await XPTransaction.create([
+        { userId: emma._id, amount: 2200, reason: 'HABIT_COMPLETION', createdAt: new Date() },
+        { userId: sarah._id, amount: 1850, reason: 'HABIT_COMPLETION', createdAt: new Date() },
+        { userId: john._id, amount: 980, reason: 'HABIT_COMPLETION', createdAt: new Date() },
+        { userId: alex._id, amount: 50, reason: 'HABIT_COMPLETION', createdAt: new Date() },
+      ]);
 
       // Friendships
       await FriendRequest.create({ senderId: alex._id, receiverId: sarah._id, status: 'accepted' });
@@ -290,6 +300,21 @@ connectDB().then(async (connected) => {
   setInterval(() => {
     runGlobalSubscriptionCheck();
   }, 60 * 60 * 1000);
+
+  if (isMongoConnected()) {
+    try {
+      await User.updateOne(
+        { email: 'sahiljadhav7414@gmail.com' },
+        { $set: { role: 'admin', status: 'active' } }
+      );
+      await User.updateMany(
+        { email: { $ne: 'sahiljadhav7414@gmail.com' }, role: { $exists: false } },
+        { $set: { role: 'user', status: 'active' } }
+      );
+    } catch (adminHookErr) {
+      console.warn('[Admin Setup Notice]', adminHookErr.message);
+    }
+  }
 
   app.listen(PORT, () => {
     console.log(`[HabitForge API Server] Running on http://localhost:${PORT}`);

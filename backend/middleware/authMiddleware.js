@@ -42,7 +42,12 @@ export const protect = async (req, res, next) => {
           req.user = inMemoryDB.users.find(u => (u._id === decoded.id || u.id === decoded.id));
         }
 
-        if (req.user) return next();
+        if (req.user) {
+          if (req.user.status === 'blocked') {
+            return res.status(403).json({ message: 'Your account has been blocked by an administrator.' });
+          }
+          return next();
+        }
       } catch (jwtErr) {
         // Token signature error or expired token
       }
@@ -64,6 +69,10 @@ export const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Not authorized, user session not found' });
       }
 
+      if (req.user.status === 'blocked') {
+        return res.status(403).json({ message: 'Your account has been blocked by an administrator.' });
+      }
+
       return next();
     } catch (error) {
       console.error('[Auth Middleware] Token error:', error.message);
@@ -75,3 +84,21 @@ export const protect = async (req, res, next) => {
     return res.status(401).json({ message: 'Not authorized, no token provided' });
   }
 };
+
+// @desc    Require Admin Role Middleware
+export const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Not authorized, session required' });
+  }
+
+  if (req.user.status === 'blocked') {
+    return res.status(403).json({ message: 'Your account has been blocked by an administrator.' });
+  }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Forbidden: Administrator privileges required' });
+  }
+
+  return next();
+};
+

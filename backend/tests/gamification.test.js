@@ -91,13 +91,25 @@ describe('HabitForge End-to-End Logic & Gamification Unit Tests', () => {
     assert.equal(res.currentStreak, 3);
   });
 
-  test('calculateStreakUpdate - weekly habit duplicate check-in in same week throws error', () => {
+  test('calculateStreakUpdate - weekly habit additional check-in in same week maintains streak', () => {
     // 2026-08-24 (Monday) and 2026-08-25 (Tuesday) are in the same calendar week
     const habit = {
       frequency: 'WEEKLY',
       currentStreak: 3,
       longestStreak: 5,
       lastCompletedDate: '2026-08-24',
+    };
+    const res = calculateStreakUpdate(habit, '2026-08-25');
+    assert.equal(res.currentStreak, 3);
+    assert.equal(res.lastCompletedDate, '2026-08-25');
+  });
+
+  test('calculateStreakUpdate - duplicate check-in on same day throws error', () => {
+    const habit = {
+      frequency: 'WEEKLY',
+      currentStreak: 3,
+      longestStreak: 5,
+      lastCompletedDate: '2026-08-25',
     };
     assert.throws(() => calculateStreakUpdate(habit, '2026-08-25'), /DUPLICATE_CHECKIN/);
   });

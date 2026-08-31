@@ -2,7 +2,8 @@ import { User } from '../models/User.js';
 import { Habit } from '../models/Habit.js';
 import { HabitLog } from '../models/HabitLog.js';
 import { Notification } from '../models/Notification.js';
-import { getNormalizedToday } from '../utils/dateUtils.js';
+import { XPTransaction } from '../models/XPTransaction.js';
+import { getNormalizedToday, formatNormalizedDate, isSameCompletionPeriod } from '../utils/dateUtils.js';
 import { isMongoConnected, inMemoryDB } from '../config/inMemoryStore.js';
 import { checkAndUpdateUserPremiumStatus, calculateNewExpiryDate } from '../utils/subscriptionUtils.js';
 import { sendCancellationConfirmationEmail } from '../services/emailService.js';
@@ -12,19 +13,29 @@ import { getActiveStreak } from '../utils/gamification.js';
 // @route   GET /api/users/dashboard-summary
 export const getDashboardSummary = async (req, res) => {
   try {
-    const todayStr = getNormalizedToday();
     const userId = req.user._id || req.user.id;
 
     if (isMongoConnected()) {
-      const [user, habits, totalCompletions, recentNotifications, todayLogs] = await Promise.all([
-        User.findById(userId),
+      const user = await User.findById(userId);
+      const targetUser = user || req.user;
+      const targetTz = targetUser.timezone || req.user?.timezone || 'UTC';
+      const targetTodayStr = getNormalizedToday(targetTz);
+
+      const [habits, totalCompletions, recentNotifications, todayLogs, recentXpTxs] = await Promise.all([
         Habit.find({ userId, isArchived: false }).sort({ createdAt: -1 }),
         HabitLog.countDocuments({ userId }),
         Notification.find({ userId }).sort({ createdAt: -1 }).limit(10),
-        HabitLog.find({ userId, completionDate: todayStr }),
+        HabitLog.find({ userId, completionDate: targetTodayStr }),
+        XPTransaction.find({
+          userId,
+          createdAt: { $gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+        }),
       ]);
 
-      const targetUser = user || req.user;
+      const todayXP = recentXpTxs
+        .filter((tx) => formatNormalizedDate(tx.createdAt, targetTz) === targetTodayStr)
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
       const { isPremium, premiumExpiresAt } = await checkAndUpdateUserPremiumStatus(targetUser);
 
       const completedHabitIds = new Set(todayLogs.map((l) => l.habitId.toString()));
@@ -34,14 +45,16 @@ export const getDashboardSummary = async (req, res) => {
         const idStr = (obj._id || obj.id).toString();
         obj.id = idStr;
         obj.isActive = obj.isActive !== false;
-        obj.currentStreak = getActiveStreak(obj, todayStr);
-        obj.completedToday = obj.lastCompletedDate === todayStr || completedHabitIds.has(idStr);
+        obj.currentStreak = getActiveStreak(obj, targetTodayStr);
+        obj.completedToday =
+          obj.lastCompletedDate === targetTodayStr ||
+          completedHabitIds.has(idStr);
         return obj;
       });
 
       const completedTodayCount = habitsWithStatus.filter((h) => h.completedToday && !h.isArchived).length;
       const currentStreak = Math.max(0, ...habitsWithStatus.map((h) => h.currentStreak || 0));
-      const longestStreak = Math.max(0, ...habits.map((h) => h.longestStreak || 0));
+      const longestStreak = Math.max(0, ...habitsWithStatus.map((h) => h.longestStreak || 0));
 
       return res.json({
         user: {
@@ -49,7 +62,10 @@ export const getDashboardSummary = async (req, res) => {
           name: targetUser.name,
           email: targetUser.email,
           avatar: targetUser.avatar,
+          role: targetUser.role || (targetUser.email?.toLowerCase() === 'sahiljadhav7414@gmail.com' ? 'admin' : 'user'),
+          status: targetUser.status || 'active',
           xp: targetUser.xp,
+          todayXP,
           level: targetUser.level,
           badges: targetUser.badges,
           isPremium,
@@ -65,14 +81,22 @@ export const getDashboardSummary = async (req, res) => {
           longestStreak,
           activeHabitsCount: activeHabits.length,
           completedTodayCount,
+          todayXP,
         },
         notifications: recentNotifications,
       });
     } else {
       // Standalone mode in-memory summary
       const { isPremium, premiumExpiresAt } = await checkAndUpdateUserPremiumStatus(req.user);
+      const targetTz = req.user.timezone || userTimezone;
+      const targetTodayStr = getNormalizedToday(targetTz);
+
+      const todayXP = (inMemoryDB.xpTransactions || [])
+        .filter((tx) => tx.userId === userId.toString() && formatNormalizedDate(tx.createdAt, targetTz) === targetTodayStr)
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
       const userHabits = inMemoryDB.habits.filter((h) => h.userId === userId.toString() && !h.isArchived);
-      const todayLogs = inMemoryDB.habitLogs.filter((l) => l.userId === userId.toString() && l.completionDate === todayStr);
+      const todayLogs = inMemoryDB.habitLogs.filter((l) => l.userId === userId.toString() && l.completionDate === targetTodayStr);
       const completedHabitIds = new Set(todayLogs.map((l) => l.habitId.toString()));
 
       const habitsWithStatus = userHabits.map((h) => {
@@ -123,16 +147,29 @@ export const getDashboardSummary = async (req, res) => {
 // @route   GET /api/users/profile
 export const getUserProfile = async (req, res) => {
   try {
-    const todayStr = getNormalizedToday();
+    const todayStr = getNormalizedToday(req.user?.timezone || 'UTC');
     const userId = req.user._id || req.user.id;
     if (isMongoConnected()) {
       const user = await User.findById(userId);
+      const userTz = user?.timezone || req.user?.timezone || 'UTC';
+      const userTodayStr = getNormalizedToday(userTz);
+
+      const [habits, totalCompletions, recentXpTxs] = await Promise.all([
+        Habit.find({ userId }),
+        HabitLog.countDocuments({ userId }),
+        XPTransaction.find({
+          userId,
+          createdAt: { $gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+        }),
+      ]);
+
+      const todayXP = recentXpTxs
+        .filter((tx) => formatNormalizedDate(tx.createdAt, userTz) === userTodayStr)
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
       const { isPremium, premiumExpiresAt } = await checkAndUpdateUserPremiumStatus(user);
 
-      const habits = await Habit.find({ userId });
-      const totalCompletions = await HabitLog.countDocuments({ userId });
-
-      const currentStreak = Math.max(0, ...habits.map((h) => getActiveStreak(h, todayStr)));
+      const currentStreak = Math.max(0, ...habits.map((h) => getActiveStreak(h, userTodayStr)));
       const longestStreak = Math.max(0, ...habits.map((h) => h.longestStreak || 0));
 
       return res.json({
@@ -141,7 +178,10 @@ export const getUserProfile = async (req, res) => {
           name: user.name,
           email: user.email,
           avatar: user.avatar,
+          role: user.role || (user.email?.toLowerCase() === 'sahiljadhav7414@gmail.com' ? 'admin' : 'user'),
+          status: user.status || 'active',
           xp: user.xp,
+          todayXP,
           level: user.level,
           badges: user.badges,
           isPremium,
@@ -156,10 +196,17 @@ export const getUserProfile = async (req, res) => {
           currentStreak,
           longestStreak,
           activeHabitsCount: habits.filter((h) => h.isActive !== false && !h.isArchived).length,
+          todayXP,
         },
       });
     } else {
       const { isPremium, premiumExpiresAt } = await checkAndUpdateUserPremiumStatus(req.user);
+      const userTz = req.user?.timezone || 'UTC';
+      const userTodayStr = getNormalizedToday(userTz);
+
+      const todayXP = (inMemoryDB.xpTransactions || [])
+        .filter((tx) => tx.userId === userId.toString() && formatNormalizedDate(tx.createdAt, userTz) === userTodayStr)
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
       return res.json({
         user: {
@@ -227,6 +274,8 @@ export const updateUserProfile = async (req, res) => {
             name: updatedUser.name,
             email: updatedUser.email,
             avatar: updatedUser.avatar,
+            role: updatedUser.role || 'user',
+            status: updatedUser.status || 'active',
             xp: updatedUser.xp,
             level: updatedUser.level,
             badges: updatedUser.badges,
@@ -286,15 +335,25 @@ export const updateUserProfile = async (req, res) => {
 export const upgradeToPremium = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
+    const now = new Date();
+    const newExpiresAt = calculateNewExpiryDate();
+
     if (isMongoConnected()) {
       const user = await User.findById(userId);
       if (user) {
         user.isPremium = true;
-        user.premiumSince = new Date();
+        user.isCancelled = false;
+        user.cancelledAt = null;
+        user.premiumSince = now;
+        user.premiumExpiresAt = newExpiresAt;
         await user.save();
       }
     }
     req.user.isPremium = true;
+    req.user.isCancelled = false;
+    req.user.cancelledAt = null;
+    req.user.premiumSince = now;
+    req.user.premiumExpiresAt = newExpiresAt;
 
     res.json({
       message: 'Successfully upgraded to HabitForge Premium!',
@@ -306,6 +365,8 @@ export const upgradeToPremium = async (req, res) => {
         xp: req.user.xp || 0,
         level: req.user.level || 1,
         isPremium: true,
+        isCancelled: false,
+        premiumExpiresAt: newExpiresAt,
       },
     });
   } catch (error) {
@@ -313,7 +374,7 @@ export const upgradeToPremium = async (req, res) => {
   }
 };
 
-// @desc    Cancel user Premium membership
+// @desc    Cancel user Premium membership (turns off auto-renewal, keeps access until expiry)
 // @route   POST /api/users/cancel-premium
 export const cancelPremium = async (req, res) => {
   try {
@@ -323,26 +384,35 @@ export const cancelPremium = async (req, res) => {
     if (isMongoConnected()) {
       const user = await User.findById(userId);
       if (user) {
-        user.isPremium = false;
+        const hasFutureExpiry = user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date();
         user.isCancelled = true;
         user.cancelledAt = new Date();
+        if (!hasFutureExpiry) {
+          user.isPremium = false;
+          user.premiumExpiresAt = null;
+        }
         await user.save();
         targetUser = user;
       }
     } else {
-      req.user.isPremium = false;
+      const hasFutureExpiry = req.user.premiumExpiresAt && new Date(req.user.premiumExpiresAt) > new Date();
       req.user.isCancelled = true;
       req.user.cancelledAt = new Date();
+      if (!hasFutureExpiry) {
+        req.user.isPremium = false;
+        req.user.premiumExpiresAt = null;
+      }
     }
 
-    // Send cancellation confirmation email to registered user
     sendCancellationConfirmationEmail({ user: targetUser }).catch((emailErr) => {
       console.error('[Cancellation Email Non-Blocking Error]', emailErr.message);
     });
 
     res.json({
-      message: 'HabitForge Premium membership cancelled successfully.',
-      isPremium: false,
+      message: targetUser.isPremium
+        ? 'Membership cancelled. Premium access remains active until your expiry date.'
+        : 'HabitForge Premium membership cancelled successfully.',
+      isPremium: targetUser.isPremium,
       isCancelled: true,
       user: {
         id: userId,
@@ -350,7 +420,8 @@ export const cancelPremium = async (req, res) => {
         email: targetUser.email,
         xp: targetUser.xp || 0,
         level: targetUser.level || 1,
-        isPremium: false,
+        isPremium: targetUser.isPremium,
+        premiumExpiresAt: targetUser.premiumExpiresAt,
         isCancelled: true,
       },
     });

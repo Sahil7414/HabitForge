@@ -93,6 +93,16 @@ const userSchema = new mongoose.Schema(
       emailNotifications: { type: Boolean, default: true },
       streakAlerts: { type: Boolean, default: true },
     },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'blocked'],
+      default: 'active',
+    },
   },
   {
     timestamps: true,

@@ -10,6 +10,7 @@ import {
   getPendingRequests,
   removeFriend,
   getWeeklyLeaderboard,
+  getFriendsLeaderboard,
 } from '../controllers/socialController.js';
 
 const router = express.Router();
@@ -24,6 +25,7 @@ router.post('/friends/request/:receiverId', sendFriendRequest);
 router.put('/friends/request/:requestId/respond', respondToFriendRequest);
 router.delete('/friends/request/:requestId', cancelFriendRequest);
 router.delete('/friends/:friendId', removeFriend);
+router.get('/leaderboard/friends', getFriendsLeaderboard);
 router.get('/leaderboard', getWeeklyLeaderboard);
 
 export default router;

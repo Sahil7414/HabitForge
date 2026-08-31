@@ -49,7 +49,11 @@ export default function Login() {
     const res = await login(email, password);
     setLoading(false);
     if (res.success) {
-      navigate('/dashboard');
+      if (res.user?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } else {
       setError(res.message || 'Login failed. Check credentials.');
     }

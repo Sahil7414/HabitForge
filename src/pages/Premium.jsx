@@ -117,8 +117,10 @@ export default function Premium() {
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-bold text-base sm:text-lg text-white">ACTIVE PREMIUM</h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] text-[10px] font-extrabold uppercase">
+                  <h3 className="font-bold text-base sm:text-lg text-white">
+                    ACTIVE PREMIUM
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981]">
                     ACTIVE
                   </span>
                 </div>
@@ -132,16 +134,18 @@ export default function Premium() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <button
-                onClick={() => setShowCancelModal(true)}
-                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs hover:bg-red-500/20 transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <X className="w-4 h-4" /> Cancel Membership
-              </button>
+            <div className="flex flex-row items-center gap-2 sm:gap-3 flex-shrink-0">
+              {!user?.isCancelled && (
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs hover:bg-red-500/20 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <X className="w-4 h-4" /> Cancel Membership
+                </button>
+              )}
               <button
                 onClick={() => setShowSupportModal(true)}
-                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/80 font-bold text-xs hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/80 font-bold text-xs hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
               >
                 <HelpCircle className="w-3.5 h-3.5 text-[#d0bcff]" /> Support & Refund
               </button>

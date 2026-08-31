@@ -224,8 +224,10 @@ export default function Settings() {
             <div className="grid grid-cols-2 gap-4">
               <div
                 onClick={() => handleThemeChange('dark')}
-                className={`p-4 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all ${
-                  theme === 'dark' ? 'bg-[#131316] border-[#d0bcff] ring-2 ring-[#d0bcff]/30' : 'bg-[#131316]/50 border-white/5'
+                className={`theme-option-card p-4 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all ${
+                  theme === 'dark'
+                    ? 'theme-option-selected bg-[#131316] border-[#d0bcff] ring-2 ring-[#d0bcff]/40 shadow-lg'
+                    : 'theme-option-inactive bg-[#131316]/50 border-white/10 hover:border-white/20'
                 }`}
               >
                 <Moon className="w-5 h-5 text-[#d0bcff]" />
@@ -237,8 +239,10 @@ export default function Settings() {
 
               <div
                 onClick={() => handleThemeChange('light')}
-                className={`p-4 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all ${
-                  theme === 'light' ? 'bg-[#131316] border-[#d0bcff] ring-2 ring-[#d0bcff]/30' : 'bg-[#131316]/50 border-white/5'
+                className={`theme-option-card p-4 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all ${
+                  theme === 'light'
+                    ? 'theme-option-selected bg-[#131316] border-[#d0bcff] ring-2 ring-[#d0bcff]/40 shadow-lg'
+                    : 'theme-option-inactive bg-[#131316]/50 border-white/10 hover:border-white/20'
                 }`}
               >
                 <Sun className="w-5 h-5 text-[#ffb95f]" />
@@ -318,83 +322,151 @@ export default function Settings() {
               <p className="text-xs text-[#cbc3d7] font-inter">No payment history found for your account.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-inter">
-                <thead>
-                  <tr className="border-b border-white/10 text-[#cbc3d7] font-geist uppercase text-[10px]">
-                    <th className="py-3 px-3">Date</th>
-                    <th className="py-3 px-3">Receipt Ref</th>
-                    <th className="py-3 px-3">Plan</th>
-                    <th className="py-3 px-3">Amount</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3">Payment ID</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 text-white">
-                  {paymentHistory.map((p) => {
-                    const pId = p._id || p.id;
-                    const isPaid = p.status === 'paid';
-                    return (
-                      <tr key={pId} className="hover:bg-white/5 transition-colors">
-                        <td className="py-3.5 px-3">
-                          {p.createdAt ? format(new Date(p.createdAt), 'dd MMM yyyy') : 'N/A'}
-                        </td>
-                        <td className="py-3.5 px-3 font-mono text-[11px] text-[#d0bcff]">
-                          {p.receiptNumber || 'HF-2026'}
-                        </td>
-                        <td className="py-3.5 px-3 font-semibold text-white">30-Day Premium</td>
-                        <td className="py-3.5 px-3 font-bold">₹{p.amount || 99} INR</td>
-                        <td className="py-3.5 px-3">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                              isPaid
-                                ? 'bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981]'
-                                : 'bg-red-500/20 border border-red-500/40 text-red-400'
-                            }`}
-                          >
-                            {p.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3 font-mono text-[11px] text-[#cbc3d7]">
-                          {p.razorpayPaymentId || p.razorpayOrderId || 'N/A'}
-                        </td>
-                        <td className="py-3.5 px-3 text-right">
-                          {isPaid && (
-                            <div className="inline-flex items-center gap-2 justify-end">
-                              <button
-                                onClick={() => handleDownloadReceipt(p)}
-                                disabled={downloadingId === pId}
-                                className="px-2.5 py-1.5 rounded-lg bg-[#a078ff]/15 border border-[#d0bcff]/30 text-[#d0bcff] hover:bg-[#a078ff]/25 font-semibold text-[11px] flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
-                              >
-                                {downloadingId === pId ? (
-                                  <RefreshCw className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Download className="w-3 h-3" />
-                                )}
-                                <span>PDF</span>
-                              </button>
+            <div className="w-full space-y-3">
+              {/* Desktop & Tablet Table (Fits container naturally without horizontal scroll) */}
+              <div className="hidden sm:block w-full overflow-hidden">
+                <table className="w-full text-left text-xs font-inter table-fixed">
+                  <thead>
+                    <tr className="border-b border-white/10 text-[#cbc3d7] font-geist uppercase text-[9px] sm:text-[10px]">
+                      <th className="py-2.5 px-1.5 w-[14%]">Date</th>
+                      <th className="py-2.5 px-1.5 w-[17%]">Receipt Ref</th>
+                      <th className="py-2.5 px-1.5 w-[14%]">Plan</th>
+                      <th className="py-2.5 px-1.5 w-[9%]">Amount</th>
+                      <th className="py-2.5 px-1.5 w-[10%]">Status</th>
+                      <th className="py-2.5 px-1.5 w-[12%]">Payment ID</th>
+                      <th className="py-2.5 px-1.5 w-[24%] text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-white">
+                    {paymentHistory.map((p) => {
+                      const pId = p._id || p.id;
+                      const isPaid = p.status === 'paid';
+                      const payIdStr = p.razorpayPaymentId || p.razorpayOrderId || 'N/A';
+                      return (
+                        <tr key={pId} className="hover:bg-white/5 transition-colors">
+                          <td className="py-3 px-2 font-geist text-xs text-white">
+                            {p.createdAt ? format(new Date(p.createdAt), 'dd MMM yyyy') : 'N/A'}
+                          </td>
+                          <td className="py-3 px-2 font-mono text-[11px] text-[#d0bcff] truncate" title={p.receiptNumber || 'HF-2026'}>
+                            {p.receiptNumber || 'HF-2026'}
+                          </td>
+                          <td className="py-3 px-2 font-semibold text-white truncate">30-Day PRO</td>
+                          <td className="py-3 px-2 font-bold text-xs">₹{p.amount || 99}</td>
+                          <td className="py-3 px-2">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
+                                isPaid
+                                  ? 'bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981]'
+                                  : p.status === 'cancelled'
+                                  ? 'bg-[#f59e0b]/20 border border-[#f59e0b]/40 text-[#f59e0b]'
+                                  : 'bg-red-500/20 border border-red-500/40 text-red-400'
+                              }`}
+                            >
+                              {p.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 font-mono text-[10px] text-[#cbc3d7] truncate" title={payIdStr}>
+                            {payIdStr}
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            {isPaid && (
+                              <div className="inline-flex items-center gap-1.5 justify-end">
+                                <button
+                                  onClick={() => handleDownloadReceipt(p)}
+                                  disabled={downloadingId === pId}
+                                  title="Download PDF Receipt"
+                                  className="px-2 py-1 rounded-md bg-[#a078ff]/15 border border-[#d0bcff]/30 text-[#d0bcff] hover:bg-[#a078ff]/25 font-semibold text-[10px] inline-flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                  {downloadingId === pId ? (
+                                    <RefreshCw className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Download className="w-3 h-3" />
+                                  )}
+                                  <span>PDF</span>
+                                </button>
 
-                              <button
-                                onClick={() => handleResendReceipt(p)}
-                                disabled={resendingId === pId}
-                                className="px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 font-semibold text-[11px] flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
-                              >
-                                {resendingId === pId ? (
-                                  <RefreshCw className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Mail className="w-3 h-3 text-[#10b981]" />
-                                )}
-                                <span>Email Receipt</span>
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                                <button
+                                  onClick={() => handleResendReceipt(p)}
+                                  disabled={resendingId === pId}
+                                  title="Resend Email Receipt"
+                                  className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-white hover:bg-white/10 font-semibold text-[10px] inline-flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                  {resendingId === pId ? (
+                                    <RefreshCw className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Mail className="w-3 h-3 text-[#10b981]" />
+                                  )}
+                                  <span>Email</span>
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card List View (No horizontal scrolling on small screens) */}
+              <div className="block sm:hidden space-y-3">
+                {paymentHistory.map((p) => {
+                  const pId = p._id || p.id;
+                  const isPaid = p.status === 'paid';
+                  const payIdStr = p.razorpayPaymentId || p.razorpayOrderId || 'N/A';
+                  return (
+                    <div key={pId} className="bg-[#131316] border border-white/10 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-extrabold font-geist text-white text-sm">30-Day Premium</span>
+                          <p className="text-[11px] font-mono text-[#d0bcff] mt-0.5">{p.receiptNumber || 'HF-2026'}</p>
+                        </div>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                            isPaid
+                              ? 'bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981]'
+                              : p.status === 'cancelled'
+                              ? 'bg-[#f59e0b]/20 border border-[#f59e0b]/40 text-[#f59e0b]'
+                              : 'bg-red-500/20 border border-red-500/40 text-red-400'
+                          }`}
+                        >
+                          {p.status}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-[#cbc3d7] pt-1 border-t border-white/5">
+                        <span>Date: <strong className="text-white">{p.createdAt ? format(new Date(p.createdAt), 'dd MMM yyyy') : 'N/A'}</strong></span>
+                        <span>Amount: <strong className="text-white">₹{p.amount || 99} INR</strong></span>
+                      </div>
+
+                      <div className="text-[10px] font-mono text-[#cbc3d7]/70 truncate">
+                        ID: {payIdStr}
+                      </div>
+
+                      {isPaid && (
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => handleDownloadReceipt(p)}
+                            disabled={downloadingId === pId}
+                            className="flex-1 py-2 rounded-xl bg-[#a078ff]/15 border border-[#d0bcff]/30 text-[#d0bcff] font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            {downloadingId === pId ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                            <span>Download PDF</span>
+                          </button>
+                          <button
+                            onClick={() => handleResendReceipt(p)}
+                            disabled={resendingId === pId}
+                            className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            {resendingId === pId ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5 text-[#10b981]" />}
+                            <span>Email Receipt</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

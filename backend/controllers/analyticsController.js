@@ -1,51 +1,146 @@
 import mongoose from 'mongoose';
 import { HabitLog } from '../models/HabitLog.js';
 import { Habit } from '../models/Habit.js';
-import { format, subDays, addDays, getDay, startOfWeek, endOfWeek, isBefore, isAfter } from 'date-fns';
+import { format, subDays, addDays, getDay, startOfWeek, endOfWeek, isBefore, isAfter, startOfMonth, differenceInCalendarDays } from 'date-fns';
 import { isMongoConnected, inMemoryDB } from '../config/inMemoryStore.js';
 
 // @desc    Get completion stats for line/bar chart with period filtering
 // @route   GET /api/analytics/completions?period=7d|30d|90d|1y
 export const get30DayCompletions = async (req, res) => {
   try {
-    const { period } = req.query;
-    let days = 30;
-    if (period === '7d') days = 7;
-    else if (period === '90d') days = 90;
-    else if (period === '1y') days = 365;
-
+    const { period, category } = req.query;
     const today = new Date();
-    const startDate = subDays(today, days - 1);
+    let startDate;
+    let days;
+
+    if (period === '7d') {
+      days = 7;
+      startDate = subDays(today, 6);
+    } else if (period === '1m' || period === '30d') {
+      // Calendar Month View: Start from 1st of the month
+      if (today.getDate() <= 7) {
+        const prevMonth = subDays(today, today.getDate() + 1);
+        startDate = startOfMonth(prevMonth);
+      } else {
+        startDate = startOfMonth(today);
+      }
+      days = differenceInCalendarDays(today, startDate) + 1;
+    } else if (period === '90d') {
+      days = 90;
+      startDate = subDays(today, 89);
+    } else if (period === '1y') {
+      days = 365;
+      startDate = subDays(today, 364);
+    } else {
+      days = 7;
+      startDate = subDays(today, 6);
+    }
+
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const userIdStr = (req.user._id || req.user.id).toString();
 
     const logMap = {};
+    const habitCountMap = {};
 
-    if (isMongoConnected()) {
-      const logs = await HabitLog.aggregate([
-        {
-          $match: {
-            userId: req.user._id,
-            completionDate: { $gte: startDateStr },
+    let userObjId = req.user._id;
+    if (typeof userObjId === 'string' && mongoose.Types.ObjectId.isValid(userObjId)) {
+      userObjId = new mongoose.Types.ObjectId(userObjId);
+    }
+
+    let hasZeroCategoryHabits = false;
+    let matchingHabitsForCompletions = null;
+
+    if (category && category !== 'All' && category !== 'All Categories') {
+      const cleanCat = category.replace(/[^\w\s-]/gi, '').trim();
+      const catRegex = new RegExp(`^${cleanCat}$`, 'i');
+
+      matchingHabitsForCompletions = await Habit.find({
+        userId: userObjId,
+        category: catRegex,
+      }).select('_id');
+
+      if (matchingHabitsForCompletions.length === 0) {
+        hasZeroCategoryHabits = true;
+      }
+    }
+
+    let userHabits = [];
+
+    if (hasZeroCategoryHabits) {
+      // 0 habits found in category: logMap remains empty ({})
+    } else if (isMongoConnected()) {
+      const aggMatch = {
+        userId: userObjId,
+        completionDate: { $gte: startDateStr },
+      };
+      if (matchingHabitsForCompletions !== null) {
+        const objIdList = matchingHabitsForCompletions
+          .map((h) => h._id)
+          .filter((id) => mongoose.Types.ObjectId.isValid(id))
+          .map((id) => new mongoose.Types.ObjectId(id));
+        aggMatch.habitId = { $in: objIdList };
+      }
+
+      const habitFilter = { userId: userObjId, isArchived: false };
+      if (matchingHabitsForCompletions !== null) {
+        habitFilter._id = { $in: matchingHabitsForCompletions.map((h) => h._id) };
+      }
+      userHabits = await Habit.find(habitFilter);
+
+      const [dateLogs, habitLogs] = await Promise.all([
+        HabitLog.aggregate([
+          { $match: aggMatch },
+          {
+            $group: {
+              _id: '$completionDate',
+              completions: { $sum: 1 },
+            },
           },
-        },
-        {
-          $group: {
-            _id: '$completionDate',
-            completions: { $sum: 1 },
+        ]),
+        HabitLog.aggregate([
+          { $match: aggMatch },
+          {
+            $group: {
+              _id: '$habitId',
+              completions: { $sum: 1 },
+            },
           },
-        },
+        ]),
       ]);
-      logs.forEach((item) => {
+
+      dateLogs.forEach((item) => {
         logMap[item._id] = item.completions;
       });
+      habitLogs.forEach((item) => {
+        habitCountMap[item._id.toString()] = item.completions;
+      });
     } else {
-      // Standalone mode in-memory aggregation
-      const userLogs = inMemoryDB.habitLogs.filter(
-        (l) => l.userId === userIdStr && l.completionDate >= startDateStr
-      );
+      let categoryHabitIds = null;
+      if (category && category !== 'All' && category !== 'All Categories') {
+        const cleanCat = category.replace(/[^\w\s-]/gi, '').trim().toLowerCase();
+        categoryHabitIds = new Set(
+          inMemoryDB.habits
+            .filter((h) => h.userId === userIdStr && (h.category || '').toLowerCase().includes(cleanCat))
+            .map((h) => (h._id || h.id).toString())
+        );
+      }
+
+      userHabits = inMemoryDB.habits.filter((h) => h.userId === userIdStr && !h.isArchived);
+      if (categoryHabitIds) {
+        userHabits = userHabits.filter((h) => categoryHabitIds.has((h._id || h.id).toString()));
+      }
+
+      const userLogs = inMemoryDB.habitLogs.filter((l) => {
+        const matchesUser = l.userId === userIdStr;
+        const matchesRange = l.completionDate >= startDateStr;
+        const matchesCat = !categoryHabitIds || categoryHabitIds.has(l.habitId?.toString());
+        return matchesUser && matchesRange && matchesCat;
+      });
+
       userLogs.forEach((l) => {
         logMap[l.completionDate] = (logMap[l.completionDate] || 0) + 1;
+        const hid = (l.habitId || '').toString();
+        habitCountMap[hid] = (habitCountMap[hid] || 0) + 1;
       });
     }
 
@@ -61,7 +156,26 @@ export const get30DayCompletions = async (req, res) => {
       });
     }
 
-    res.json(chartData);
+    const habitBreakdown = userHabits.map((h) => {
+      const idStr = (h._id || h.id).toString();
+      const completions = habitCountMap[idStr] || 0;
+      let target = days;
+      if (h.frequency === 'WEEKLY') {
+        target = Math.max(1, Math.round(days / 7));
+      }
+      const rate = Math.min(100, Math.round((completions / target) * 100));
+      return {
+        id: idStr,
+        name: h.title,
+        icon: h.icon || '🏃',
+        color: h.color || '#d0bcff',
+        rate,
+        completions,
+        totalCompletions: h.totalCompletions || completions,
+      };
+    });
+
+    res.json({ chartData, habitBreakdown });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -80,12 +194,24 @@ export const getHeatmap = async (req, res) => {
     if (days > 90 && !isPremiumActive) {
       days = 90; // Limit free users to 90 days
     }
-    const { habitId } = req.query;
+    const { habitId, category } = req.query;
 
 
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
-    const startDate = subDays(today, days - 1);
+    let startDate;
+
+    if (days === 30) {
+      if (today.getDate() <= 7) {
+        const prevMonth = subDays(today, today.getDate() + 1);
+        startDate = startOfMonth(prevMonth);
+      } else {
+        startDate = startOfMonth(today);
+      }
+    } else {
+      startDate = subDays(today, days - 1);
+    }
+
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const userIdStr = (req.user._id || req.user.id).toString();
 
@@ -94,19 +220,53 @@ export const getHeatmap = async (req, res) => {
     // Align calendar end date to following Saturday (6)
     const calendarEndDate = endOfWeek(today, { weekStartsOn: 0 });
 
-    const logMap = {};
-    let queryFilter = {
-      userId: req.user._id,
-      completionDate: { $gte: startDateStr, $lte: todayStr },
-    };
-
-    if (habitId && mongoose.Types.ObjectId.isValid(habitId)) {
-      queryFilter.habitId = new mongoose.Types.ObjectId(habitId);
+    let userObjId = req.user._id;
+    if (typeof userObjId === 'string' && mongoose.Types.ObjectId.isValid(userObjId)) {
+      userObjId = new mongoose.Types.ObjectId(userObjId);
     }
 
-    if (isMongoConnected()) {
+    const logMap = {};
+
+    let hasZeroCategoryHabits = false;
+    let matchingHabitsForHeatmap = null;
+
+    if (category && category !== 'All' && category !== 'All Categories') {
+      const cleanCat = category.replace(/[^\w\s-]/gi, '').trim();
+      const catRegex = new RegExp(`^${cleanCat}$`, 'i');
+
+      matchingHabitsForHeatmap = await Habit.find({
+        userId: userObjId,
+        category: catRegex,
+      }).select('_id');
+
+      if (matchingHabitsForHeatmap.length === 0) {
+        hasZeroCategoryHabits = true;
+      }
+    } else if (habitId && mongoose.Types.ObjectId.isValid(habitId)) {
+      // single habit filter — wrap in array for reuse
+      matchingHabitsForHeatmap = [{ _id: new mongoose.Types.ObjectId(habitId) }];
+    }
+
+    if (hasZeroCategoryHabits) {
+      // 0 habits found in category: logMap remains empty ({})
+    } else if (isMongoConnected()) {
+      // HabitLog stores userId and habitId as ObjectId.
+      // Aggregation $match does NOT auto-cast strings — we must pass ObjectId directly.
+      const aggMatch = {
+        userId: userObjId,
+        completionDate: { $gte: startDateStr, $lte: todayStr },
+      };
+      if (matchingHabitsForHeatmap !== null) {
+        // Category or habitId filter active — restrict to matching habit ObjectIds
+        const objIdList = matchingHabitsForHeatmap
+          .map((h) => h._id)
+          .filter((id) => mongoose.Types.ObjectId.isValid(id))
+          .map((id) => new mongoose.Types.ObjectId(id));
+        aggMatch.habitId = { $in: objIdList };
+      }
+
       const logs = await HabitLog.aggregate([
-        { $match: queryFilter },
+        { $match: aggMatch },
         {
           $group: {
             _id: '$completionDate',
@@ -118,11 +278,22 @@ export const getHeatmap = async (req, res) => {
         logMap[item._id] = item.count;
       });
     } else {
+      let categoryHabitIds = null;
+      if (category && category !== 'All' && category !== 'All Categories') {
+        const cleanCat = category.replace(/[^\w\s-]/gi, '').trim().toLowerCase();
+        categoryHabitIds = new Set(
+          inMemoryDB.habits
+            .filter((h) => h.userId === userIdStr && (h.category || '').toLowerCase().includes(cleanCat))
+            .map((h) => (h._id || h.id).toString())
+        );
+      }
+
       const userLogs = inMemoryDB.habitLogs.filter((l) => {
         const matchesUser = l.userId === userIdStr;
         const matchesRange = l.completionDate >= startDateStr && l.completionDate <= todayStr;
         const matchesHabit = !habitId || l.habitId === habitId;
-        return matchesUser && matchesRange && matchesHabit;
+        const matchesCat = !categoryHabitIds || categoryHabitIds.has(l.habitId?.toString());
+        return matchesUser && matchesRange && matchesHabit && matchesCat;
       });
       userLogs.forEach((l) => {
         logMap[l.completionDate] = (logMap[l.completionDate] || 0) + 1;
