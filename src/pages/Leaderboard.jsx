@@ -94,7 +94,7 @@ export default function Leaderboard() {
               <span className="text-[10px] font-bold font-geist text-[#cbc3d7] uppercase tracking-wider">
                 Your Rank
               </span>
-              <div className="text-xl font-extrabold font-geist text-[#d0bcff]">
+              <div className="leaderboard-user-rank-val text-xl font-extrabold font-geist text-[#d0bcff]">
                 #{currentUserEntry.rank} of {leaderboard.length}
               </div>
             </div>
@@ -106,7 +106,7 @@ export default function Leaderboard() {
                 </span>
                 <span className="text-[9px] text-[#ffb95f] font-extrabold font-geist">⚡</span>
               </div>
-              <div className="text-xl font-extrabold font-geist text-[#ffb95f]">
+              <div className="leaderboard-user-xp-val text-xl font-extrabold font-geist text-[#ffb95f]">
                 +{currentUserEntry.weeklyXP || 0} XP
               </div>
             </div>
@@ -143,7 +143,11 @@ export default function Leaderboard() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowXpGuide((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1f1f22] border border-white/10 hover:border-[#d0bcff]/40 text-xs font-geist text-[#cbc3d7] hover:text-white transition-all cursor-pointer shadow-sm"
+              className={`xp-guide-trigger inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-geist transition-all cursor-pointer shadow-sm ${
+                showXpGuide
+                  ? 'xp-guide-trigger-active bg-[#d0bcff]/20 border-[#d0bcff]/60 text-white font-semibold'
+                  : 'bg-[#1f1f22] border-white/10 hover:border-[#d0bcff]/40 text-[#cbc3d7] hover:text-white'
+              }`}
             >
               <HelpCircle className="w-3.5 h-3.5 text-[#ffb95f]" />
               <span>How XP & Ranking Work</span>
@@ -160,44 +164,44 @@ export default function Leaderboard() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden"
             >
-              <div className="bg-gradient-to-r from-[#1f1f22] via-[#26252a] to-[#1f1f22] border border-[#d0bcff]/30 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+              <div className="xp-guide-banner bg-gradient-to-r from-[#1f1f22] via-[#26252a] to-[#1f1f22] border border-[#d0bcff]/30 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Info className="w-5 h-5 text-[#d0bcff]" />
-                    <h3 className="font-bold font-geist text-white text-base">
+                    <Info className="xp-guide-info-icon w-5 h-5 text-[#d0bcff]" />
+                    <h3 className="xp-guide-title font-bold font-geist text-white text-base">
                       Understanding Leaderboard XP
                     </h3>
                   </div>
                   <button
                     onClick={() => setShowXpGuide(false)}
-                    className="text-xs text-[#cbc3d7] hover:text-white cursor-pointer px-2 py-1"
+                    className="xp-guide-dismiss text-xs text-[#cbc3d7] hover:text-white cursor-pointer px-2.5 py-1 rounded-lg transition-colors"
                   >
                     Dismiss ✕
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-inter text-[#cbc3d7]">
-                  <div className="p-4 bg-[#131316]/80 rounded-2xl border border-[#ffb95f]/20 space-y-1.5">
+                  <div className="xp-guide-card xp-guide-card-weekly p-4 bg-[#131316]/80 rounded-2xl border border-[#ffb95f]/20 space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#ffb95f]" />
-                      <span className="font-bold font-geist text-white text-sm">
+                      <span className="xp-guide-dot-weekly w-2.5 h-2.5 rounded-full bg-[#ffb95f]" />
+                      <span className="xp-guide-card-title font-bold font-geist text-white text-sm">
                         Orange (+XP) = Weekly XP
                       </span>
                     </div>
-                    <p className="leading-relaxed">
-                      Points earned <strong className="text-white">during the current week only</strong> (Monday 00:00 UTC to Sunday). Used as the <strong className="text-[#ffb95f]">primary score</strong> to rank all users. Resets to 0 every Monday.
+                    <p className="xp-guide-card-desc leading-relaxed">
+                      Points earned <strong className="text-white">during the current week only</strong> (Monday 00:00 UTC to Sunday). Used as the <strong className="xp-accent-weekly text-[#ffb95f]">primary score</strong> to rank all users. Resets to 0 every Monday.
                     </p>
                   </div>
 
-                  <div className="p-4 bg-[#131316]/80 rounded-2xl border border-white/10 space-y-1.5">
+                  <div className="xp-guide-card xp-guide-card-total p-4 bg-[#131316]/80 rounded-2xl border border-white/10 space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#cbc3d7]" />
-                      <span className="font-bold font-geist text-white text-sm">
+                      <span className="xp-guide-dot-total w-2.5 h-2.5 rounded-full bg-[#cbc3d7]" />
+                      <span className="xp-guide-card-title font-bold font-geist text-white text-sm">
                         Gray Text = Lifetime Total XP
                       </span>
                     </div>
-                    <p className="leading-relaxed">
-                      Total XP accumulated <strong className="text-white">all-time</strong> across your entire HabitForge journey. Used as a <strong className="text-[#d0bcff]">tie-breaker</strong> when two users have equal weekly XP.
+                    <p className="xp-guide-card-desc leading-relaxed">
+                      Total XP accumulated <strong className="text-white">all-time</strong> across your entire HabitForge journey. Used as a <strong className="xp-accent-total text-[#d0bcff]">tie-breaker</strong> when two users have equal weekly XP.
                     </p>
                   </div>
                 </div>
@@ -207,18 +211,18 @@ export default function Leaderboard() {
         </AnimatePresence>
 
         {/* Quick Visual XP Key Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-[11px] font-geist text-[#cbc3d7] px-2 py-1">
+        <div className="xp-legend flex flex-wrap items-center gap-4 text-[11px] font-geist text-[#cbc3d7] px-2 py-1">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#ffb95f]" />
-            <span><strong className="text-[#ffb95f]">Orange (+XP):</strong> Weekly XP (Sort Criteria)</span>
+            <span className="xp-legend-dot-weekly w-2 h-2 rounded-full bg-[#ffb95f]" />
+            <span><strong className="xp-legend-text-weekly text-[#ffb95f]">Orange (+XP):</strong> Weekly XP (Sort Criteria)</span>
           </div>
-          <span className="text-white/20">•</span>
+          <span className="xp-legend-bullet text-white/20">•</span>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#cbc3d7]" />
-            <span><strong className="text-white">Gray Text:</strong> All-Time Total XP (Tie-Breaker)</span>
+            <span className="xp-legend-dot-total w-2 h-2 rounded-full bg-[#cbc3d7]" />
+            <span><strong className="xp-legend-text-total text-white">Gray Text:</strong> All-Time Total XP (Tie-Breaker)</span>
           </div>
-          <span className="text-white/20">•</span>
-          <span className="text-[#cbc3d7]/80">Resets Mondays at 00:00 UTC</span>
+          <span className="xp-legend-bullet text-white/20">•</span>
+          <span className="xp-legend-reset text-[#cbc3d7]/80">Resets Mondays at 00:00 UTC</span>
         </div>
 
         {/* Loading Spinner */}

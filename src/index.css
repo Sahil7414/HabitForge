@@ -509,6 +509,150 @@ html.light-theme .standings-row-me span {
   color: #6d28d9 !important;
 }
 
+/* Leaderboard Header Stat Values in Light Mode */
+html.light-theme .leaderboard-user-rank-val {
+  color: #6d28d9 !important;
+}
+
+html.light-theme .leaderboard-user-xp-val {
+  color: #b45309 !important;
+}
+
+/* "How XP & Ranking Work" Trigger Button in Light Mode */
+html.light-theme .xp-guide-trigger {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light-theme .xp-guide-trigger:hover {
+  background-color: #f8fafc !important;
+  border-color: #a78bfa !important;
+  color: #0f172a !important;
+}
+
+html.light-theme .xp-guide-trigger.xp-guide-trigger-active {
+  background-color: #f5f3ff !important;
+  border: 1.5px solid #8b5cf6 !important;
+  color: #5b21b6 !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* "How XP & Ranking Work" Explanation Banner in Light Mode */
+html.light-theme .xp-guide-banner {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #f5f3ff 100%) !important;
+  border: 1.5px solid #ddd6fe !important;
+  box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.07), 0 4px 10px rgba(0, 0, 0, 0.03) !important;
+}
+
+html.light-theme .xp-guide-info-icon {
+  color: #7c3aed !important;
+}
+
+html.light-theme .xp-guide-title {
+  color: #0f172a !important;
+}
+
+html.light-theme .xp-guide-dismiss {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html.light-theme .xp-guide-dismiss:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Inner Cards within XP Guide in Light Mode */
+/* Weekly XP Card */
+html.light-theme .xp-guide-card-weekly {
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%) !important;
+  border: 1.5px solid #fde68a !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08) !important;
+}
+
+html.light-theme .xp-guide-card-weekly .xp-guide-card-title {
+  color: #92400e !important;
+}
+
+html.light-theme .xp-guide-card-weekly .xp-guide-dot-weekly {
+  background-color: #f59e0b !important;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4) !important;
+}
+
+html.light-theme .xp-guide-card-weekly .xp-guide-card-desc {
+  color: #334155 !important;
+}
+
+html.light-theme .xp-guide-card-weekly .xp-guide-card-desc strong {
+  color: #0f172a !important;
+}
+
+html.light-theme .xp-guide-card-weekly .xp-accent-weekly {
+  color: #b45309 !important;
+  font-weight: 700 !important;
+}
+
+/* Lifetime Total XP Card */
+html.light-theme .xp-guide-card-total {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+  border: 1.5px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+}
+
+html.light-theme .xp-guide-card-total .xp-guide-card-title {
+  color: #1e293b !important;
+}
+
+html.light-theme .xp-guide-card-total .xp-guide-dot-total {
+  background-color: #64748b !important;
+}
+
+html.light-theme .xp-guide-card-total .xp-guide-card-desc {
+  color: #334155 !important;
+}
+
+html.light-theme .xp-guide-card-total .xp-guide-card-desc strong {
+  color: #0f172a !important;
+}
+
+html.light-theme .xp-guide-card-total .xp-accent-total {
+  color: #6d28d9 !important;
+  font-weight: 700 !important;
+}
+
+/* Quick Visual XP Key Legend in Light Mode */
+html.light-theme .xp-legend {
+  color: #334155 !important;
+}
+
+html.light-theme .xp-legend-dot-weekly {
+  background-color: #f59e0b !important;
+}
+
+html.light-theme .xp-legend-text-weekly {
+  color: #b45309 !important;
+}
+
+html.light-theme .xp-legend-dot-total {
+  background-color: #64748b !important;
+}
+
+html.light-theme .xp-legend-text-total {
+  color: #1e293b !important;
+}
+
+html.light-theme .xp-legend-bullet {
+  color: #94a3b8 !important;
+}
+
+html.light-theme .xp-legend-reset {
+  color: #64748b !important;
+}
+
 /* Modals, Popovers & Dialogs */
 html.light-theme .bg-black\/80 {
   background-color: rgba(15, 23, 42, 0.6) !important;
