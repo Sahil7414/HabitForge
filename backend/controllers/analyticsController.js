@@ -1,15 +1,18 @@
 import mongoose from 'mongoose';
 import { HabitLog } from '../models/HabitLog.js';
 import { Habit } from '../models/Habit.js';
-import { format, subDays, addDays, getDay, startOfWeek, endOfWeek, isBefore, isAfter, startOfMonth, differenceInCalendarDays } from 'date-fns';
+import { format, parseISO, subDays, addDays, getDay, startOfWeek, endOfWeek, isBefore, isAfter, startOfMonth, differenceInCalendarDays } from 'date-fns';
 import { isMongoConnected, inMemoryDB } from '../config/inMemoryStore.js';
+import { getNormalizedToday } from '../utils/dateUtils.js';
 
 // @desc    Get completion stats for line/bar chart with period filtering
 // @route   GET /api/analytics/completions?period=7d|30d|90d|1y
 export const get30DayCompletions = async (req, res) => {
   try {
     const { period, category } = req.query;
-    const today = new Date();
+    const userTz = req.user?.timezone || 'UTC';
+    const todayStr = getNormalizedToday(userTz);
+    const today = parseISO(todayStr);
     let startDate;
     let days;
 
@@ -197,8 +200,9 @@ export const getHeatmap = async (req, res) => {
     const { habitId, category } = req.query;
 
 
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
+    const userTz = req.user?.timezone || 'UTC';
+    const todayStr = getNormalizedToday(userTz);
+    const today = parseISO(todayStr);
     let startDate;
 
     if (days === 30) {
@@ -396,10 +400,11 @@ export const getAnalyticsOverview = async (req, res) => {
     let logs7Count = 0;
     let todayCount = 0;
 
-    const today = new Date();
+    const userTz = req.user?.timezone || 'UTC';
+    const todayStr = getNormalizedToday(userTz);
+    const today = parseISO(todayStr);
     const last30Str = format(subDays(today, 30), 'yyyy-MM-dd');
     const last7Str = format(subDays(today, 7), 'yyyy-MM-dd');
-    const todayStr = format(today, 'yyyy-MM-dd');
 
     if (isMongoConnected()) {
       habits = await Habit.find({ userId: req.user._id, isArchived: false });

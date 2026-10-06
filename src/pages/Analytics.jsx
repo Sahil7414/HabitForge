@@ -125,6 +125,16 @@ export default function Analytics() {
 
   const [heatmapDays, setHeatmapDays] = useState(30);
 
+  const completedTodayCount = useMemo(() => {
+    return Array.isArray(habits) ? habits.filter((h) => h.completedToday).length : 0;
+  }, [habits]);
+
+  const maxStreakCount = useMemo(() => {
+    return Array.isArray(habits) && habits.length > 0
+      ? Math.max(0, ...habits.map((h) => h.currentStreak || 0))
+      : 0;
+  }, [habits]);
+
   // Load completion chart data and period-specific breakdown according to selected period
   useEffect(() => {
     let isSubscribed = true;
@@ -151,7 +161,7 @@ export default function Analytics() {
     return () => {
       isSubscribed = false;
     };
-  }, [period, selectedCategory]);
+  }, [period, selectedCategory, habits]);
 
   // Load heatmap data (30, 90, or 365 days)
   useEffect(() => {
@@ -181,15 +191,24 @@ export default function Analytics() {
     return () => {
       isSubscribed = false;
     };
-  }, [user.isPremium, selectedCategory, heatmapDays]);
+  }, [user.isPremium, selectedCategory, heatmapDays, habits]);
 
   // Load overview metrics
   useEffect(() => {
+    let isSubscribed = true;
     analyticsAPI
       .getOverview()
-      .then((res) => setOverview(res.data))
-      .catch(() => setOverview(null));
-  }, []);
+      .then((res) => {
+        if (isSubscribed && res.data) setOverview(res.data);
+      })
+      .catch(() => {
+        if (isSubscribed) setOverview(null);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [habits, user?.xp, user?.totalCompletions]);
 
   async function handleExportCSV() {
     if (!user.isPremium) {
@@ -416,7 +435,7 @@ export default function Analytics() {
               <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
             </div>
             <span className="text-2xl font-extrabold font-geist text-white">
-              {overview ? overview.habitsCompletedToday : 0}
+              {overview ? (overview.habitsCompletedToday ?? completedTodayCount) : completedTodayCount}
             </span>
           </div>
 
@@ -426,7 +445,7 @@ export default function Analytics() {
               <Flame className="w-4 h-4 text-[#ffb95f]" />
             </div>
             <span className="text-2xl font-extrabold font-geist text-[#ffb95f]">
-              {overview ? `${overview.currentStreak}d` : `${user.currentStreak || 0}d`}
+              {overview ? `${overview.currentStreak ?? maxStreakCount}d` : `${maxStreakCount || user.currentStreak || 0}d`}
             </span>
           </div>
 
