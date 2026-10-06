@@ -67,9 +67,11 @@ export default function Login() {
         className="w-full max-w-md space-y-6"
       >
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6d3bd7] to-[#a078ff] flex items-center justify-center text-white font-bold text-xl mx-auto shadow-lg shadow-[#a078ff]/20">
-            ⚒
-          </div>
+          <img
+            src="/logo.png"
+            alt="HabitForge Logo"
+            className="w-14 h-14 rounded-2xl mx-auto shadow-lg shadow-[#a078ff]/25 object-contain drop-shadow-[0_0_14px_rgba(160,120,255,0.45)]"
+          />
           <h1 className="text-3xl font-extrabold font-geist text-white">
             Welcome back
           </h1>

@@ -73,9 +73,11 @@ export default function Landing() {
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 bg-[#131316]/80 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6d3bd7] to-[#a078ff] flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-[#a078ff]/20">
-            ⚒
-          </div>
+          <img
+            src="/logo.png"
+            alt="HabitForge Logo"
+            className="w-9 h-9 rounded-xl object-contain drop-shadow-[0_0_12px_rgba(160,120,255,0.45)]"
+          />
           <span className="text-xl font-bold font-geist text-white tracking-tight">
             HabitForge
           </span>
@@ -257,8 +259,14 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-8 border-t border-white/5 text-center text-xs text-[#cbc3d7] font-inter">
-        © 2026 HabitForge • Gamified Habit Tracker Application
+      <footer className="py-8 px-8 border-t border-white/5">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#cbc3d7] font-inter">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="HabitForge" className="w-5 h-5 object-contain" />
+            <span className="font-geist font-bold text-white tracking-tight">HabitForge</span>
+          </div>
+          <div>© 2026 HabitForge • Gamified Habit Tracker Application</div>
+        </div>
       </footer>
     </div>
   );

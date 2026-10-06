@@ -134,7 +134,14 @@ export default function AppLayout({ children }) {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="font-geist font-bold text-[#d0bcff]">HabitForge</span>
+            <div className="flex items-center gap-2">
+              <img
+                src="/logo.png"
+                alt="HabitForge Logo"
+                className="w-6 h-6 rounded-lg object-contain"
+              />
+              <span className="font-geist font-bold text-[#d0bcff]">HabitForge</span>
+            </div>
             <span className="text-[#a078ff] font-bold">/</span>
             <span className="font-geist font-extrabold text-white tracking-wide">{getPageTitle(location.pathname)}</span>
           </div>

@@ -66,16 +66,11 @@ export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
       {/* Logo */}
       <div className="px-6 py-5 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #6d3bd7 0%, #a078ff 100%)',
-              color: '#ffffff',
-              boxShadow: '0 0 16px rgba(160, 120, 255, 0.4)',
-            }}
-          >
-            ⚒
-          </div>
+          <img
+            src="/logo.png"
+            alt="HabitForge Logo"
+            className="w-9 h-9 rounded-xl object-contain drop-shadow-[0_0_12px_rgba(160,120,255,0.45)]"
+          />
           <span className="text-xl font-bold tracking-tight font-geist text-white">
             HabitForge
           </span>
